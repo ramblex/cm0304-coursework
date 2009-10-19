@@ -1,0 +1,15 @@
+CM0304 coursework
+=================
+
+To install and run use the following commands:
+
+./configure
+make
+
+If there are no errors, you can run the program using 
+
+src/coursework
+
+alternatively, install the program using
+
+sudo make install
