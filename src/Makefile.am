@@ -1,5 +1,4 @@
-AM_CFLAGS = -W -Wall -Wextra -ansi
-AM_CXXFLAGS = -W -Wall -Wextra -ansi $(GLUT_CFLAGS) 
+AM_CXXFLAGS = -W -Wall -Wextra -ansi $(GLUT_CFLAGS)
 
 bin_PROGRAMS = coursework
 
