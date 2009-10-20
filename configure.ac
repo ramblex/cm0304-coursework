@@ -15,6 +15,7 @@ AC_PROG_RANLIB
 
 # Checks for libraries.
 AX_CHECK_GLUT
+AC_CHECK_LIB([m], [cos])
 
 # Checks for header files.
 
