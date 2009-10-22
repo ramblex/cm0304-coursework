@@ -197,16 +197,16 @@ void sphere()
 // Draw the floor of the scene
 void floor()
 {
-  static GLfloat diffuse[] = {0.7, 0.7, 0.0, 1.0};
-  static GLfloat ambient[] = {0.5, 0.5, 0.0, 1.0};
+  static GLfloat diffuse[] = {0.1, 0.1, 0.0, 1.0};
+  static GLfloat ambient[] = {0.1, 0.5, 0.5, 1.0};
   static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine (3.0);
+  static GLfloat shine(3.0);
 
   // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+  glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+  glMaterialf(GL_FRONT, GL_SHININESS, shine);
 
   // Push current modelview matrix on a matrix stack to save current
   // transformation.
@@ -215,11 +215,14 @@ void floor()
   glTranslated (0.0, 0.0, 0.0);
   glRotated (0.0, 1.0, 0.0, 0.0);
 
-  glBegin(GL_QUADS);
-    glVertex3f(-30, 0, -30);
-    glVertex3f(-30, 0, 30);
-    glVertex3f(30, 0, 30);
-    glVertex3f(30, 0, -30);
+  glBegin(GL_LINES);
+  for (int i = -40; i <= 40; ++i)
+  {
+    glVertex3f(i, 0, -40);
+    glVertex3f(i, 0, 40);
+    glVertex3f(-40, 0, i);
+    glVertex3f(40, 0, i);
+  }
   glEnd();
 
   // Get original matrix back from stack (undo above transformation
@@ -227,13 +230,26 @@ void floor()
   glPopMatrix ();
 }
 
+/**
+ * Helper method to work out the secant of a given angle
+ * @param x The angle
+ * @return The secant of the angle, x
+ */
 static double sec(double x)
 {
   return (1 / cos(x));
 }
 
+/**
+ * Draw a hyperbolic paraboloid.
+ * The parametric equations for the hyperbolic paraboloid are from:
+ * http://www.physicsforums.com/showthread.php?t=89217
+ * @param res The accuracy with which to draw the parametric surface; 
+ * the lower, the more accurate.
+ */
 void parametric_surface(double res)
 {
+  // Define material
   static GLfloat diffuse[] = {0.1, 0.9, 0.0, 1.0};
   static GLfloat ambient[] = {0.5, 0.5, 0.0, 1.0};
   static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
@@ -249,7 +265,7 @@ void parametric_surface(double res)
   // transformation.
   glPushMatrix ();
 
-  glTranslated (0.0, -0.9, 0.0);
+  glTranslated (3.0, -0.9, 0.0);
   glRotated (0.0, 1.0, 0.0, 0.0);
 
   for (double s = -180/4; s <= 180/4; s += res)
@@ -257,19 +273,13 @@ void parametric_surface(double res)
     glBegin(GL_QUAD_STRIP);
     for (double t = -180/4; t <= 180/4; t += res)
     {
-      // The parametric equations for the hyperbolic paraboloid are from:
-      // http://www.physicsforums.com/showthread.php?t=89217
-      double u = deg_to_rad*s;
-      double v = deg_to_rad*t;
-      glVertex3f(2 * tan(v) * sec(u),
-                 sqrt(2) * sec(u) * sec(v),
-                 3 * tan(u));
+      double u = deg_to_rad * s;
+      double v = deg_to_rad * t;
+      glVertex3f(2 * tan(v) * sec(u), sqrt(2) * sec(u) * sec(v), 3 * tan(u));
 
       u = deg_to_rad * (s + res);
       v = deg_to_rad * (t + res);
-      glVertex3f(2 * tan(v) * sec(u),
-                 sqrt(2) * sec(u) * sec(v),
-                 3 * tan(u));
+      glVertex3f(2 * tan(v) * sec(u), sqrt(2) * sec(u) * sec(v), 3 * tan(u));
     }
     glEnd();
   }
@@ -279,13 +289,16 @@ void parametric_surface(double res)
   glPopMatrix ();
 }
 
-// Add objects to the scene. Order does not matter since we are using
-// DEPTH_TEST
+/**
+ * Add objects to the scene. Order does not matter since we are using
+ * DEPTH_TEST. They will be automatically added to the scene's display list
+ */
 void scene()
 {
   floor();
+
+  // For Q2. (a)
   parametric_surface(0.3);
-  // sphere();
 
   return;
 }
