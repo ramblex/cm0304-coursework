@@ -296,6 +296,7 @@ void parametric_surface(double res)
 void scene()
 {
   floor();
+  sphere();
 
   // For Q2. (a)
   parametric_surface(0.3);
