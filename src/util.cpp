@@ -21,8 +21,8 @@ vector_t cross_product(const vector_t& a, const vector_t& b)
 
 vector_t find_normal(vector_t& p1, vector_t& p2, vector_t& p3)
 {
-  vector_t e1 = p3 - p2;
-  vector_t e2 = p2 - p1;
+  vector_t e1 = p2 - p1;
+  vector_t e2 = p3 - p1;
   return cross_product(e1, e2);
 }
 }  // namespace cm0304
