@@ -9,6 +9,15 @@
  */
 #include <iostream>
 #include <math.h>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <sstream>
+
+using std::ifstream;
+using std::string;
+using std::vector;
+using std::stringstream;
 
 #ifdef __APPLE__
 #include <GLUT/glut.h>
@@ -50,77 +59,45 @@ void special_up_callback(int key, int, int)
   g_keys[key] = false;
 }
 
-/**
- * Q2. 3D objects
- * A parametric surface which is not a plane, sphere, cylinder or cone. This
- * can be added to the scene through the scene() function.
- *
- * A parametric surface is defined by parametric functions:
- * x = fx(u, v)
- * y = fy(u, v)
- * y = fz(u, v)
- *
- * @param accuracy The approximation accuracy of the surface by polygons
- */
-void cylinder()
+struct vector_t
 {
-  // Surface material
-  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
-  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine (127.0);
+  double x;
+  double y;
+  double z;
+};
 
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+inline vector_t operator-(const vector_t& v1, const vector_t& v2)
+{
+  vector_t res;
+  res.x = v1.x - v2.x;
+  res.y = v1.y - v2.y;
+  res.z = v1.z - v2.z;
+  return res;
+}
 
-  glPushMatrix();
-  glTranslated(0.0, 1.0, 0.0);
+inline vector_t cross_product(const vector_t& a, const vector_t& b)
+{
+  vector_t res;
+  res.x = (a.y * b.z) - (a.z * b.y);
+  res.y = (a.z * b.x) - (a.x * b.z);
+  res.z = (a.x * b.y) - (a.y * b.x);
+  return res;
+}
 
-  int r = 1;
-
-  for (double h = 0; h < 5; h += 0.1)
-  {
-    glBegin(GL_QUAD_STRIP);
-    for (double theta = -180; theta <= 180; theta += 0.1)
-    {
-      double rad_theta = deg_to_rad * theta;
-      double x = r * cos(rad_theta);
-      double y = r * sin(rad_theta);
-      double z = h;
-      glVertex3f(x, z, y);
-
-      rad_theta = deg_to_rad * (theta + 0.1);
-       x = r * cos(rad_theta);
-       y = r * sin(rad_theta);
-       z = h + 0.1;
-      glVertex3f(x, z, y);
-    }
-    glEnd();
-  }
-
-  glPopMatrix();
-  return;
+vector_t find_normal(vector_t& p1, vector_t& p2, vector_t& p3)
+{
+  vector_t e1 = p3 - p2;
+  vector_t e2 = p2 - p1;
+  return cross_product(e1, e2);
 }
 
 /**
  * Q2. 3D objects
  * Stanford bunny mesh
  */
-void bunny()
+void teddy()
 {
-
-}
-
-// Sphere from shaded.cc
-void sphere()
-{
-  // Angle steps for facet size
-  static double da (1.0);
-
-  // Sphere material
+  // Material
   static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
   static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
   static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
@@ -132,66 +109,59 @@ void sphere()
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
 
+  ifstream is("teddy.ply");
+  string line = "";
+  const int num_vertices = 202; // Number of vertices in the mesh
+  const int num_faces = 400; // Number of faces in the mesh
+  // Parse the header
+  while (getline(is, line))
+  {
+    if (line == "end_header")
+      break;
+  }
+
+  // Read in the vertices
+  vector<vector_t> vertices;
+  int num_vertices_read = 0;
+  while (num_vertices_read < num_vertices)
+  {
+    getline(is, line);
+    stringstream ss(line);
+    vector_t v;
+    ss >> v.x >> v.y >> v.z;
+    vertices.push_back(v);
+    ++num_vertices_read;
+  }
+
   glPushMatrix();
-  glTranslated(0.0, 1.0, 0.0);
-
-  // For shading we need surface normals in addition to vertex
-  // positions; for the unit sphere the normal is the same than the
-  // surface position (note that this is a very special case!).
-  //
-  // We first set the normal of the vertex and then the vertex itself.
-
-  // Quadrilateral strips
-  for (double phi = -90.0 + da; phi < 90.0; phi += da) {
-    glBegin (GL_QUAD_STRIP);
-    for (double thet = -180.0; thet <= 180.0; thet += da) {
-      double u = sin (deg_to_rad * thet) * cos (deg_to_rad * phi);
-      glNormal3d (u,
-		  cos (deg_to_rad * thet) * cos (deg_to_rad * phi),
-		  sin (deg_to_rad * phi));
-      glVertex3d (sin (deg_to_rad * thet) * cos (deg_to_rad * phi),
-		  cos (deg_to_rad * thet) * cos (deg_to_rad * phi),
-		  sin (deg_to_rad * phi));
-      glNormal3d (sin (deg_to_rad * thet) * cos (deg_to_rad * (phi + da)),
-		  cos (deg_to_rad * thet) * cos (deg_to_rad * (phi + da)),
-		  sin (deg_to_rad * (phi + da)));
-      glVertex3d (sin (deg_to_rad * thet) * cos (deg_to_rad * (phi + da)),
-		  cos (deg_to_rad * thet) * cos (deg_to_rad * (phi + da)),
-		  sin (deg_to_rad * (phi + da)));
-    }
+  glEnable(GL_NORMALIZE);
+  glScalef(0.2, 0.2, 0.2);
+  glTranslated(0.0, 20.0, 0.0);
+  // Read in the faces
+  int num_faces_read = 0;
+  glBegin(GL_TRIANGLES);
+  while (num_faces_read < num_faces)
+  {
+    getline(is, line);
+    stringstream ss(line);
+    int num = 0; // Number of vertices - this is discarded
+    int v1 = -1;
+    int v2 = -1;
+    int v3 = -1;
+    ss >> num >> v1 >> v2 >> v3;
+    // Assume that the vertices of the triangle are given in an anti-clockwise
+    // direction.
+    vector_t n = find_normal(vertices[v1], vertices[v2], vertices[v3]);
+    glNormal3f(n.x, n.y, n.z);
+    glVertex3f(vertices[v1].x, vertices[v1].y, vertices[v1].z);
+    glNormal3f(n.x, n.y, n.z);
+    glVertex3f(vertices[v2].x, vertices[v2].y, vertices[v2].z);
+    glNormal3f(n.x, n.y, n.z);
+    glVertex3f(vertices[v3].x, vertices[v3].y, vertices[v3].z);
+    ++num_faces_read;
+  }
     glEnd();
-  }
-
-  // North pole
-  glBegin (GL_TRIANGLE_FAN);
-  glNormal3d (0.0, 0.0, 1.0);
-  glVertex3d (0.0, 0.0, 1.0);
-  for (double thet = -180.0; thet <= 180.0; thet += 10.0) {
-    glNormal3d (sin (deg_to_rad * thet) * cos (deg_to_rad * (90.0 - da)),
-		cos (deg_to_rad * thet) * cos (deg_to_rad * (90.0 - da)),
-		sin (deg_to_rad * 80.0));
-    glVertex3d (sin (deg_to_rad * thet) * cos (deg_to_rad * (90.0 - da)),
-		cos (deg_to_rad * thet) * cos (deg_to_rad * (90.0 - da)),
-		sin (deg_to_rad * 80.0));
-  }
-  glEnd();
-
-  // South pole
-  glBegin (GL_TRIANGLE_FAN);
-  glNormal3d (0.0, 0.0, -1.0);
-  glVertex3d (0.0, 0.0, -1.0);
-  for (double thet = -180.0; thet <= 180.0; thet += 10.0) {
-    glNormal3d (sin (deg_to_rad * thet) * cos (deg_to_rad * (-90.0 + da)),
-		cos (deg_to_rad * thet) * cos (deg_to_rad * (-90.0 + da)),
-		sin (deg_to_rad * (-90.0 + da)));
-    glVertex3d (sin (deg_to_rad * thet) * cos (deg_to_rad * (-90.0 + da)),
-		cos (deg_to_rad * thet) * cos (deg_to_rad * (-90.0 + da)),
-		sin (deg_to_rad * (-90.0 + da)));
-  }
-  glEnd();
-  glPopMatrix();
-
-  return;
+    glPopMatrix();
 }
 
 // Draw the floor of the scene
@@ -264,8 +234,8 @@ void parametric_surface(double res)
   // Push current modelview matrix on a matrix stack to save current
   // transformation.
   glPushMatrix ();
-
-  glTranslated (3.0, -0.9, 0.0);
+  glEnable(GL_NORMALIZE);
+  glTranslated (20.0, -0.9, 0.0);
   glRotated (0.0, 1.0, 0.0, 0.0);
 
   for (double s = -180/4; s <= 180/4; s += res)
@@ -275,11 +245,23 @@ void parametric_surface(double res)
     {
       double u = deg_to_rad * s;
       double v = deg_to_rad * t;
-      glVertex3f(2 * tan(v) * sec(u), sqrt(2) * sec(u) * sec(v), 3 * tan(u));
+      double x1 = 2 * tan(v) * sec(u);
+      double y1 = sqrt(2) * sec(u) * sec(v);
+      glVertex3f(x1, y1, 3 * tan(u));
 
       u = deg_to_rad * (s + res);
       v = deg_to_rad * (t + res);
-      glVertex3f(2 * tan(v) * sec(u), sqrt(2) * sec(u) * sec(v), 3 * tan(u));
+      double x2 = 2 * tan(v) * sec(u);
+      double y2 = sqrt(2) * sec(u) * sec(v);
+      glVertex3f(x2, y2, 3 * tan(u));
+
+      // Work out the normal for the face
+      // Adapted from:
+      // http://www.opengl.org/resources/code/samples/glut_examples/examples/dinoshade.c
+      double dx = y2 - y1;
+      double dy = x2 - x1;
+      double len = sqrt((dx * dx) + (dy * dy));
+      glNormal3f(dx / len, dy / len, 0.0);
     }
     glEnd();
   }
@@ -296,10 +278,8 @@ void parametric_surface(double res)
 void scene()
 {
   floor();
-  sphere();
-
-  // For Q2. (a)
   parametric_surface(0.3);
+  teddy();
 
   return;
 }
