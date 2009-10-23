@@ -1,3 +1,4 @@
 .deps/
 coursework
-coursework.o
+*.o
+*.ply
