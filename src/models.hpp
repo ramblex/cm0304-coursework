@@ -6,6 +6,8 @@
 
 #include "base.hpp"
 
+namespace cm0304
+{
 /**
  * Reads the mesh from teddy.ply and draws it on the screen. It calculates
  * the normals of each surface and so can be used with GL_SMOOTH.
@@ -21,5 +23,6 @@ void parametric_surface(double res);
  * Draws a simple grid that looks something like a floor.
  */
 void floor();
+}  // namespace cm0304
 
 #endif /* MODELS_H_ */

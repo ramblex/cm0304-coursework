@@ -23,8 +23,11 @@ using std::string;
 using std::vector;
 using std::stringstream;
 
+namespace cm0304
+{
 // Conversion factors for degrees to radians (from wireframe.cc)
 static const double deg_to_rad (M_PI / 180.0);
 static const double rad_to_deg (180.0 / M_PI);
+}
 
 #endif /* BASE_H_ */

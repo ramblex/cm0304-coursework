@@ -7,6 +7,8 @@
 
 #include "base.hpp"
 
+namespace cm0304
+{
 /**
  * Model a vector in a structure. This allows us to easily perform operations
  * on vectors without having to do lots of mangling of arrays.
@@ -47,6 +49,6 @@ vector_t cross_product(const vector_t& a, const vector_t& b);
  * of a triangle face.
  */
 vector_t find_normal(vector_t& p1, vector_t& p2, vector_t& p3);
-
+}  // namespace cm0304
 
 #endif /* UTIL_H_ */

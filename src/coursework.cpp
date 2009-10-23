@@ -14,15 +14,14 @@
 GLuint scene_dl(0U);
 
 // The y rotation of the camera in degrees
-float angle = 0;
+double angle = 0;
 
-// Rate at which camera is rotated, higher means faster rotation
-float rotate_sensitivity = 0.4;
-
-float dist_sensitivity = 0.1;
+// Camera sensitivity
+const double rotate_sensitivity = 0.4;
+const double dist_sensitivity = 0.1;
 
 // The inverted position of the camera
-float position[3]={0, -2, -30};
+double position[3] = {0, -2, -30};
 
 // Used to keep track of keyboard keys - this is so we can use multiple keys
 // at once.
@@ -46,9 +45,9 @@ void special_up_callback(int key, int, int)
  */
 void scene()
 {
-  floor();
-  parametric_surface(0.3);
-  teddy();
+  cm0304::floor();
+  cm0304::parametric_surface(0.3);
+  cm0304::teddy();
 
   return;
 }
@@ -58,6 +57,7 @@ void scene()
  */
 void init_lights()
 {
+  // Enable lighting
   glEnable(GL_LIGHTING);
 
   glPolygonMode(GL_FRONT, GL_FILL);

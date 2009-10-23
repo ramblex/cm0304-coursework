@@ -5,6 +5,8 @@
 #include "models.hpp"
 #include "util.hpp"
 
+namespace cm0304
+{
 /**
  * Q2. 3D objects
  * Stanford bunny mesh
@@ -174,3 +176,4 @@ void parametric_surface(double res)
   // for objects drawn after this one)
   glPopMatrix ();
 }
+}  // namespace cm0304
