@@ -16,6 +16,8 @@ GLuint scene_dl(0U);
 // The y rotation of the camera in degrees
 double angle = 0;
 
+bool smooth_teddy = false;
+
 // Camera sensitivity
 const double rotate_sensitivity = 0.4;
 const double dist_sensitivity = 0.1;
@@ -39,6 +41,25 @@ void special_up_callback(int key, int, int)
   g_keys[key] = false;
 }
 
+void keyboard_callback(unsigned char key, int, int)
+{
+  if (key == 's')
+  {
+    if (smooth_teddy)
+    {
+      std::cerr << "FALSE" << std::endl;
+      smooth_teddy = false;
+    }
+    else
+    {
+      std::cerr << "TRUE" << std::endl;
+      smooth_teddy = true;
+    }
+  }
+
+  glutPostRedisplay();
+}
+
 /**
  * Add objects to the scene. Order does not matter since we are using
  * DEPTH_TEST. They will be automatically added to the scene's display list
@@ -47,7 +68,7 @@ void scene()
 {
   cm0304::floor();
   cm0304::parametric_surface(0.3);
-  cm0304::teddy();
+  cm0304::teddy(smooth_teddy);
 
   return;
 }
@@ -60,6 +81,7 @@ void init_lights()
   // Enable lighting
   glEnable(GL_LIGHTING);
 
+  // Fill in polygons
   glPolygonMode(GL_FRONT, GL_FILL);
 
   // Treat polygon front and back side equal (no two-sided polygons)
@@ -77,12 +99,27 @@ void init_lights()
     static GLfloat diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
     static GLfloat specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
 
-    // Enable first light source
+    // Enable first light 
     glEnable (GL_LIGHT0);
     // Set light emitted by light source 0
     glLightfv (GL_LIGHT0, GL_AMBIENT, ambient);
     glLightfv (GL_LIGHT0, GL_DIFFUSE, diffuse);
     glLightfv (GL_LIGHT0, GL_SPECULAR, specular);
+  }
+
+  {
+    // Light source 1
+    static GLfloat ambient[] = {0.5f, 0.5f, 0.5f, 1.0f};
+    static GLfloat diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    static GLfloat specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
+
+    // Enable first light source
+    glEnable (GL_LIGHT1);
+    // Set light emitted by light source 1
+    glLightfv (GL_LIGHT1, GL_AMBIENT, ambient);
+    glLightfv (GL_LIGHT1, GL_DIFFUSE, diffuse);
+    glLightfv (GL_LIGHT1, GL_SPECULAR, specular);
+    glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 0.15f);
   }
 
   return;
@@ -91,8 +128,11 @@ void init_lights()
 // Set position of light sources
 void lights()
 {
-  static GLfloat light0_pos[] = {0.0f, 3.0f, 2.0f, 1.0f};
+  static GLfloat light0_pos[] = {20.0, 20.0, 10.0, 1.0f};
   glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
+
+  static GLfloat light1_pos[] = {1.0, 0.0, 0.0, 1.0};
+  glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
 
   return;
 }
@@ -180,6 +220,7 @@ int main(int argc, char *argv[])
   glutSpecialFunc(special_callback);
   glutSpecialUpFunc(special_up_callback);
   glutIdleFunc(idle_callback);
+  glutKeyboardFunc(keyboard_callback);
 
   // Initialise lights so that they are ready to be added to the scene
   init_lights();

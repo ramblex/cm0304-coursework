@@ -12,7 +12,7 @@ namespace cm0304
  * Reads the mesh from teddy.ply and draws it on the screen. It calculates
  * the normals of each surface and so can be used with GL_SMOOTH.
  */
-void teddy();
+void teddy(bool smooth);
 
 /**
  * Draws a hyperbolic paraboloid and calculates the normals for each quad.

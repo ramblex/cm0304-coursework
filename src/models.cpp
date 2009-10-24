@@ -5,13 +5,18 @@
 #include "models.hpp"
 #include "util.hpp"
 
+#include <map>
+
 namespace cm0304
 {
+
+using std::map;
+
 /**
  * Q2. 3D objects
  * Stanford bunny mesh
  */
-void teddy()
+void teddy(bool use_vertex_normals)
 {
   // Material
   static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
@@ -53,67 +58,85 @@ void teddy()
   glEnable(GL_NORMALIZE);
   glScalef(0.2, 0.2, 0.2);
   glTranslated(0.0, 20.0, 0.0);
-  // Read in the faces
+  // Read in the faces and compute the face normals, storing them in a vector.
+  // This makes it easy to do work out the vector normals.
   int num_faces_read = 0;
-  glBegin(GL_TRIANGLES);
+  vector<vector_t> face_normals;
+  map<int, vector_t> vector_normals;
+  vector<triangle_t> triangles;
   while (num_faces_read < num_faces)
   {
     getline(is, line);
     stringstream ss(line);
     int num = 0; // Number of vertices - this is discarded
-    int v1 = -1;
-    int v2 = -1;
-    int v3 = -1;
+    double v1 = -1;
+    double v2 = -1;
+    double v3 = -1;
     ss >> num >> v1 >> v2 >> v3;
+
     // Assume that the vertices of the triangle are given in an anti-clockwise
     // direction.
-    vector_t n = find_normal(vertices[v1], vertices[v2], vertices[v3]);
-    glNormal3f(n.x, n.y, n.z);
-    glVertex3f(vertices[v1].x, vertices[v1].y, vertices[v1].z);
-    glNormal3f(n.x, n.y, n.z);
-    glVertex3f(vertices[v2].x, vertices[v2].y, vertices[v2].z);
-    glNormal3f(n.x, n.y, n.z);
-    glVertex3f(vertices[v3].x, vertices[v3].y, vertices[v3].z);
+    vector_t normal = find_normal(vertices[v1], vertices[v2], vertices[v3]);
+
+    if (vector_normals.find(v1) != vector_normals.end())
+      vector_normals[v1] = vector_normals[v1] + normal;
+    else
+      vector_normals[v1] = normal;
+
+    if (vector_normals.find(v2) != vector_normals.end())
+      vector_normals[v2] = vector_normals[v2] + normal;
+    else
+      vector_normals[v2] = normal;
+
+    if (vector_normals.find(v3) != vector_normals.end())
+      vector_normals[v3] = vector_normals[v3] + normal;
+    else
+      vector_normals[v3] = normal;
+
+    triangle_t t;
+    t.v1 = v1;
+    t.v2 = v2;
+    t.v3 = v3;
+    t.normal = normal;
+    triangles.push_back(t);
+
     ++num_faces_read;
   }
-    glEnd();
-    glPopMatrix();
-}
 
-// Draw the floor of the scene
-void floor()
-{
-  static GLfloat diffuse[] = {0.1, 0.1, 0.0, 1.0};
-  static GLfloat ambient[] = {0.1, 0.5, 0.5, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine(3.0);
-
-  // Set material
-  glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-  glMaterialf(GL_FRONT, GL_SHININESS, shine);
-
-  // Push current modelview matrix on a matrix stack to save current
-  // transformation.
-  glPushMatrix ();
-
-  glTranslated (0.0, 0.0, 0.0);
-  glRotated (0.0, 1.0, 0.0, 0.0);
-
-  glBegin(GL_LINES);
-  for (int i = -40; i <= 40; ++i)
+  glBegin(GL_TRIANGLES);
+  vector<triangle_t>::iterator it = triangles.begin();
+  for ( ; it != triangles.end(); ++it)
   {
-    glVertex3f(i, 0, -40);
-    glVertex3f(i, 0, 40);
-    glVertex3f(-40, 0, i);
-    glVertex3f(40, 0, i);
+    triangle_t t = (*it);
+    if (use_vertex_normals)
+    {
+      glNormal3f(vector_normals[t.v1].x, 
+                 vector_normals[t.v1].y, 
+                 vector_normals[t.v1].z);
+    }
+    else
+    {
+      glNormal3f(t.normal.x, t.normal.y, t.normal.z);
+    }
+    glVertex3f(vertices[t.v1].x, vertices[t.v1].y, vertices[t.v1].z);
+    if (use_vertex_normals)
+    {
+      glNormal3f(vector_normals[t.v2].x, 
+                 vector_normals[t.v2].y, 
+                 vector_normals[t.v2].z);
+    }
+    glVertex3f(vertices[t.v2].x, vertices[t.v2].y, vertices[t.v2].z);
+    if (use_vertex_normals)
+    {
+      glNormal3f(vector_normals[t.v3].x, 
+                 vector_normals[t.v3].y, 
+                 vector_normals[t.v3].z);
+    }
+    glVertex3f(vertices[t.v3].x, vertices[t.v3].y, vertices[t.v3].z);
   }
   glEnd();
 
-  // Get original matrix back from stack (undo above transformation
-  // for objects drawn after this one)
-  glPopMatrix ();
+  glPopMatrix();
 }
 
 /**
@@ -171,6 +194,40 @@ void parametric_surface(double res)
     }
     glEnd();
   }
+
+  // Get original matrix back from stack (undo above transformation
+  // for objects drawn after this one)
+  glPopMatrix ();
+}
+
+// Draw the floor of the scene
+void floor()
+{
+  static GLfloat diffuse[] = {0.1, 0.1, 0.0, 1.0};
+  static GLfloat ambient[] = {0.2, 0.2, 0.2, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine(3.0);
+
+  // Set material
+  glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+  glMaterialf(GL_FRONT, GL_SHININESS, shine);
+
+  // Push current modelview matrix on a matrix stack to save current
+  // transformation.
+  glPushMatrix ();
+
+  glTranslated (0.0, 0.0, 0.0);
+  glRotated (0.0, 1.0, 0.0, 0.0);
+
+  glBegin(GL_QUADS);
+  glNormal3f(0.0, -1.0, 0.0);
+  glVertex3f(-40.0, 0.0, 40.0);
+  glVertex3f(40.0, 0.0, 40.0);
+  glVertex3f(40.0, 0.0, -40.0);
+  glVertex3f(-40.0, 0.0, -40.0);
+  glEnd();
 
   // Get original matrix back from stack (undo above transformation
   // for objects drawn after this one)
