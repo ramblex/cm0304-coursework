@@ -16,7 +16,7 @@ GLuint scene_dl(0U);
 // The y rotation of the camera in degrees
 double angle = 0;
 
-bool smooth_teddy = false;
+bool smooth_teddy = true;
 
 // Camera sensitivity
 const double rotate_sensitivity = 0.4;
@@ -67,7 +67,7 @@ void keyboard_callback(unsigned char key, int, int)
 void scene()
 {
   cm0304::floor();
-  cm0304::parametric_surface(0.3);
+  cm0304::parametric_surface(20);
   cm0304::teddy(smooth_teddy);
 
   return;
@@ -107,21 +107,6 @@ void init_lights()
     glLightfv (GL_LIGHT0, GL_SPECULAR, specular);
   }
 
-  {
-    // Light source 1
-    static GLfloat ambient[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    static GLfloat diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
-    static GLfloat specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
-
-    // Enable first light source
-    glEnable (GL_LIGHT1);
-    // Set light emitted by light source 1
-    glLightfv (GL_LIGHT1, GL_AMBIENT, ambient);
-    glLightfv (GL_LIGHT1, GL_DIFFUSE, diffuse);
-    glLightfv (GL_LIGHT1, GL_SPECULAR, specular);
-    glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 0.15f);
-  }
-
   return;
 }
 
@@ -130,9 +115,6 @@ void lights()
 {
   static GLfloat light0_pos[] = {20.0, 20.0, 10.0, 1.0f};
   glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
-
-  static GLfloat light1_pos[] = {1.0, 0.0, 0.0, 1.0};
-  glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
 
   return;
 }
