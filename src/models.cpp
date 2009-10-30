@@ -13,8 +13,10 @@ namespace cm0304
 using std::map;
 
 /**
- * Q2. 3D objects
- * Stanford bunny mesh
+ * Q2. 3D objects - Render the teddy mesh adding normals.  
+ *
+ * @param use_vertex_normals If set to true, the mesh will be smoothed by using
+ * per vertex normals otherwise per face normals will be used.
  */
 void teddy(bool use_vertex_normals)
 {
@@ -30,10 +32,10 @@ void teddy(bool use_vertex_normals)
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
 
-  ifstream is("teddy.ply");
+  ifstream is("cow.ply");
   string line = "";
-  const int num_vertices = 202; // Number of vertices in the mesh
-  const int num_faces = 400; // Number of faces in the mesh
+  const int num_vertices = 2903; // Number of vertices in the mesh
+  const int num_faces = 5804; // Number of faces in the mesh
   // Parse the header
   while (getline(is, line))
   {
@@ -56,8 +58,9 @@ void teddy(bool use_vertex_normals)
 
   glPushMatrix();
   glEnable(GL_NORMALIZE);
-  glScalef(0.2, 0.2, 0.2);
-  glTranslated(0.0, 20.0, 0.0);
+  //  glScalef(0.2, 0.2, 0.2);
+  //  glTranslated(30.0, 20.0, 30.0);
+  glTranslated(-10.0, 0.0, 0.0);
   // Read in the faces and compute the face normals, storing them in a vector.
   // This makes it easy to do work out the vector normals.
   int num_faces_read = 0;
@@ -110,8 +113,8 @@ void teddy(bool use_vertex_normals)
     triangle_t t = (*it);
     if (use_vertex_normals)
     {
-      glNormal3f(vector_normals[t.v1].x, 
-                 vector_normals[t.v1].y, 
+      glNormal3f(vector_normals[t.v1].x,
+                 vector_normals[t.v1].y,
                  vector_normals[t.v1].z);
     }
     else
@@ -121,15 +124,15 @@ void teddy(bool use_vertex_normals)
     glVertex3f(vertices[t.v1].x, vertices[t.v1].y, vertices[t.v1].z);
     if (use_vertex_normals)
     {
-      glNormal3f(vector_normals[t.v2].x, 
-                 vector_normals[t.v2].y, 
+      glNormal3f(vector_normals[t.v2].x,
+                 vector_normals[t.v2].y,
                  vector_normals[t.v2].z);
     }
     glVertex3f(vertices[t.v2].x, vertices[t.v2].y, vertices[t.v2].z);
     if (use_vertex_normals)
     {
-      glNormal3f(vector_normals[t.v3].x, 
-                 vector_normals[t.v3].y, 
+      glNormal3f(vector_normals[t.v3].x,
+                 vector_normals[t.v3].y,
                  vector_normals[t.v3].z);
     }
     glVertex3f(vertices[t.v3].x, vertices[t.v3].y, vertices[t.v3].z);
@@ -140,17 +143,19 @@ void teddy(bool use_vertex_normals)
 }
 
 /**
- * Draw a hyperbolic paraboloid.
- * The parametric equations for the hyperbolic paraboloid are from:
- * http://www.physicsforums.com/showthread.php?t=89217
- * @param res The accuracy with which to draw the parametric surface; 
+ * Draw a trumpet shaped parametric surface. 
+ * Equations are from http://www.math.uri.edu/~bkaskosz/flashmo/tools/parsur/
+ * @param res The accuracy with which to draw the parametric surface;
  * the lower, the more accurate.
  */
 void parametric_surface(double res)
 {
+  std::cout << res << std::endl;
+  glPushMatrix ();
+
   // Define material
-  static GLfloat diffuse[] = {0.1, 0.9, 0.0, 1.0};
-  static GLfloat ambient[] = {0.5, 0.5, 0.0, 1.0};
+  static GLfloat ambient[] = {0.0, 0.0, 0.4, 1.0};
+  static GLfloat diffuse[] = {0.1, 0.1, 0.1, 1.0};
   static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
   static GLfloat shine (3.0);
 
@@ -162,35 +167,36 @@ void parametric_surface(double res)
 
   // Push current modelview matrix on a matrix stack to save current
   // transformation.
-  glPushMatrix ();
   glEnable(GL_NORMALIZE);
-  glTranslated (20.0, -0.9, 0.0);
-  glRotated (0.0, 1.0, 0.0, 0.0);
+  glTranslated (0.0, 3.0, 0.0);
+  glScaled(0.5, 0.5, 0.5);
+  glRotated(45.0, 0.0, 45.0, 1.0);
 
-  for (double s = -180/4; s <= 180/4; s += res)
+  for (double s = -180; s <= 180; s += res)
   {
     glBegin(GL_QUAD_STRIP);
-    for (double t = -180/4; t <= 180/4; t += res)
+    for (double t = 0; t < 17; ++t)
     {
-      double u = deg_to_rad * s;
-      double v = deg_to_rad * t;
-      double x1 = 2 * tan(v) * sec(u);
-      double y1 = sqrt(2) * sec(u) * sec(v);
-      glVertex3f(x1, y1, 3 * tan(u));
+      vector_t v0;
+      v0.x = t;
+      v0.y = 6/pow(t + 1, 0.7) * cos(s * deg_to_rad);
+      v0.z = 6/pow(t + 1, 0.7) * sin(s * deg_to_rad);
 
-      u = deg_to_rad * (s + res);
-      v = deg_to_rad * (t + res);
-      double x2 = 2 * tan(v) * sec(u);
-      double y2 = sqrt(2) * sec(u) * sec(v);
-      glVertex3f(x2, y2, 3 * tan(u));
+      vector_t v1;
+      v1.x = t;
+      v1.y = 6/pow(t + 1, 0.7) * cos((s + res) * deg_to_rad);
+      v1.z = 6/pow(t + 1, 0.7) * sin((s + res) * deg_to_rad);
 
-      // Work out the normal for the face
-      // Adapted from:
-      // http://www.opengl.org/resources/code/samples/glut_examples/examples/dinoshade.c
-      double dx = y2 - y1;
-      double dy = x2 - x1;
-      double len = sqrt((dx * dx) + (dy * dy));
-      glNormal3f(dx / len, dy / len, 0.0);
+      // Use a third point to get two edges on the face
+      vector_t v2;
+      v2.x = t+1;
+      v2.y = 6/pow(t + 2, 0.7) * cos((s + res) * deg_to_rad);
+      v2.z = 6/pow(t + 2, 0.7) * sin((s + res) * deg_to_rad);
+
+      vector_t normal = find_normal(v0, v1, v2);
+      glNormal3d(normal.x, normal.y, normal.z);
+      glVertex3d(v0.x, v0.y, v0.z);
+      glVertex3d(v1.x, v1.y, v1.z);
     }
     glEnd();
   }
