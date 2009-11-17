@@ -13,12 +13,9 @@ namespace cm0304
 using std::map;
 
 /**
- * Q2. 3D objects - Render the teddy mesh adding normals.  
- *
- * @param use_vertex_normals If set to true, the mesh will be smoothed by using
- * per vertex normals otherwise per face normals will be used.
+ * Q2. 3D objects
  */
-void teddy(bool use_vertex_normals)
+void subdivision_teddy()
 {
   // Material
   static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
@@ -32,13 +29,14 @@ void teddy(bool use_vertex_normals)
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
 
-  ifstream is("cow.ply");
+  ifstream is("teddy.ply")  ;
   string line = "";
-  const int num_vertices = 2903; // Number of vertices in the mesh
-  const int num_faces = 5804; // Number of faces in the mesh
+  const int num_vertices = 202; // Number of vertices in the mesh
+  const int num_faces = 400; // Number of faces in the mesh
   // Parse the header
   while (getline(is, line))
   {
+    std::cout << "Reading line" << std::endl;
     if (line == "end_header")
       break;
   }
@@ -58,8 +56,108 @@ void teddy(bool use_vertex_normals)
 
   glPushMatrix();
   glEnable(GL_NORMALIZE);
-  //  glScalef(0.2, 0.2, 0.2);
-  //  glTranslated(30.0, 20.0, 30.0);
+  glScalef(0.2, 0.2, 0.2);
+  glTranslated(-30.0, 20.0, 30.0);
+  glTranslated(-10.0, 0.0, 0.0);
+
+  // Read in the faces and compute the face normals, storing them in a vector.
+  // This makes it easy to do work out the vector normals.
+  int num_faces_read = 0;
+
+  // Catmull-Clark subdivision
+  vector<vector_t> face_points; // A face point is created for each old polygon
+  vector<vector_t> edge_points; // An edge point is created for each old edge
+  vector<vector_t> new_vertex_points;
+
+  vector<vector_t> face_normals;
+  map<int, vector_t> vector_normals;
+  vector<triangle_t> triangles;
+  while (num_faces_read < num_faces)
+  {
+    getline(is, line);
+    stringstream ss(line);
+    int num = 0; // Number of vertices - this is discarded
+    double v1 = -1;
+    double v2 = -1;
+    double v3 = -1;
+    // Parse the line into doubles
+    ss >> num >> v1 >> v2 >> v3;
+                            
+    // Assume that the vertices of the triangle are given in an anti-clockwise
+    // direction.
+    vector_t normal = find_normal(vertices[v1], vertices[v2], vertices[v3]);
+
+    triangle_t t;
+    t.v1 = v1;
+    t.v2 = v2;
+    t.v3 = v3;
+    t.normal = normal;
+    triangles.push_back(t);
+
+    ++num_faces_read;
+  }
+
+  glBegin(GL_TRIANGLES);
+  vector<triangle_t>::iterator it = triangles.begin();
+  for ( ; it != triangles.end(); ++it)
+  {
+    triangle_t t = (*it);
+    glNormal3f(t.normal.x, t.normal.y, t.normal.z);
+    glVertex3f(vertices[t.v1].x, vertices[t.v1].y, vertices[t.v1].z);
+    glVertex3f(vertices[t.v2].x, vertices[t.v2].y, vertices[t.v2].z);
+    glVertex3f(vertices[t.v3].x, vertices[t.v3].y, vertices[t.v3].z);
+  }
+  glEnd();
+
+  glPopMatrix();
+}
+
+/**
+ * Q2. 3D objects
+ */
+void vertex_normals_teddy()
+{
+  // Material
+  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
+  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
+  ifstream is("teddy.ply");
+  string line = "";
+  const int num_vertices = 202; // Number of vertices in the mesh
+  const int num_faces = 400; // Number of faces in the mesh
+  // Parse the header
+  while (getline(is, line))
+  {
+    std::cout << "Reading line" << std::endl;
+    if (line == "end_header")
+      break;
+  }
+
+  // Read in the vertices
+  vector<vector_t> vertices;
+  int num_vertices_read = 0;
+  while (num_vertices_read < num_vertices)
+  {
+    getline(is, line);
+    stringstream ss(line);
+    vector_t v;
+    ss >> v.x >> v.y >> v.z;
+    vertices.push_back(v);
+    ++num_vertices_read;
+  }
+
+  glPushMatrix();
+  glEnable(GL_NORMALIZE);
+  glScalef(0.2, 0.2, 0.2);
+  glTranslated(30.0, 20.0, 30.0);
   glTranslated(-10.0, 0.0, 0.0);
   // Read in the faces and compute the face normals, storing them in a vector.
   // This makes it easy to do work out the vector normals.
@@ -75,12 +173,14 @@ void teddy(bool use_vertex_normals)
     double v1 = -1;
     double v2 = -1;
     double v3 = -1;
+    // Parse the line into doubles
     ss >> num >> v1 >> v2 >> v3;
 
     // Assume that the vertices of the triangle are given in an anti-clockwise
     // direction.
     vector_t normal = find_normal(vertices[v1], vertices[v2], vertices[v3]);
 
+    // Accumulate the normals for each vertex. 
     if (vector_normals.find(v1) != vector_normals.end())
       vector_normals[v1] = vector_normals[v1] + normal;
     else
@@ -106,35 +206,23 @@ void teddy(bool use_vertex_normals)
     ++num_faces_read;
   }
 
+  // Draw the teddy as triangles where each vertex has its own normal
   glBegin(GL_TRIANGLES);
   vector<triangle_t>::iterator it = triangles.begin();
   for ( ; it != triangles.end(); ++it)
   {
     triangle_t t = (*it);
-    if (use_vertex_normals)
-    {
-      glNormal3f(vector_normals[t.v1].x,
-                 vector_normals[t.v1].y,
-                 vector_normals[t.v1].z);
-    }
-    else
-    {
-      glNormal3f(t.normal.x, t.normal.y, t.normal.z);
-    }
+    glNormal3f(vector_normals[t.v1].x,
+               vector_normals[t.v1].y,
+               vector_normals[t.v1].z);
     glVertex3f(vertices[t.v1].x, vertices[t.v1].y, vertices[t.v1].z);
-    if (use_vertex_normals)
-    {
-      glNormal3f(vector_normals[t.v2].x,
-                 vector_normals[t.v2].y,
-                 vector_normals[t.v2].z);
-    }
+    glNormal3f(vector_normals[t.v2].x,
+               vector_normals[t.v2].y,
+               vector_normals[t.v2].z);
     glVertex3f(vertices[t.v2].x, vertices[t.v2].y, vertices[t.v2].z);
-    if (use_vertex_normals)
-    {
-      glNormal3f(vector_normals[t.v3].x,
-                 vector_normals[t.v3].y,
-                 vector_normals[t.v3].z);
-    }
+    glNormal3f(vector_normals[t.v3].x,
+               vector_normals[t.v3].y,
+               vector_normals[t.v3].z);
     glVertex3f(vertices[t.v3].x, vertices[t.v3].y, vertices[t.v3].z);
   }
   glEnd();

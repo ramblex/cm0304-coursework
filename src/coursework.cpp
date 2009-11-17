@@ -16,7 +16,8 @@ GLuint scene_dl(0U);
 // The y rotation of the camera in degrees
 double angle = 0;
 
-bool smooth_teddy = true;
+// If true, use subdivision for the teddy 
+bool smooth_teddy = false;
 
 // Camera sensitivity
 const double rotate_sensitivity = 0.4;
@@ -25,39 +26,26 @@ const double dist_sensitivity = 0.1;
 // The inverted position of the camera
 double position[3] = {0, -2, -30};
 
-// Used to keep track of keyboard keys - this is so we can use multiple keys
-// at once.
+/** Used to keep track of keyboard keys - this is so we can use multiple keys
+ * at once. */
 int g_keys[128] = {false};
 
-// Handle special keys when they are pressed (idea from ...)
+/** Handle special keys when they are pressed (idea from ...) */
 void special_callback(int key, int, int)
 {
   g_keys[key] = true;
+  return;
 }
 
 // Unset the special key flag.
 void special_up_callback(int key, int, int)
 {
   g_keys[key] = false;
+  return;
 }
 
 void keyboard_callback(unsigned char key, int, int)
 {
-  if (key == 's')
-  {
-    if (smooth_teddy)
-    {
-      std::cerr << "FALSE" << std::endl;
-      smooth_teddy = false;
-    }
-    else
-    {
-      std::cerr << "TRUE" << std::endl;
-      smooth_teddy = true;
-    }
-  }
-
-  glutPostRedisplay();
 }
 
 /**
@@ -67,9 +55,9 @@ void keyboard_callback(unsigned char key, int, int)
 void scene()
 {
   cm0304::floor();
+  cm0304::vertex_normals_teddy();
+  cm0304::subdivision_teddy();
   cm0304::parametric_surface(20);
-  cm0304::teddy(smooth_teddy);
-
   return;
 }
 
@@ -106,7 +94,6 @@ void init_lights()
     glLightfv (GL_LIGHT0, GL_DIFFUSE, diffuse);
     glLightfv (GL_LIGHT0, GL_SPECULAR, specular);
   }
-
   return;
 }
 
@@ -115,7 +102,6 @@ void lights()
 {
   static GLfloat light0_pos[] = {20.0, 20.0, 10.0, 1.0f};
   glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
-
   return;
 }
 
