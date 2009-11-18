@@ -5,16 +5,41 @@
 #define MODELS_H_
 
 #include "base.hpp"
+#include "util.hpp"
 
 namespace cm0304
 {
+class Model
+{
+ public:
+  virtual void draw() = 0;
+};
+
+class Teddy : public Model
+{
+ public:
+  Teddy(int num_subdivides) 
+      : m_num_subdivides(num_subdivides)
+  {}
+
+  void draw();
+ private:
+  void read_mesh();
+  void set_material();
+  void subdivide();
+
+  int m_num_subdivides; // Number of times to apply subdivision
+  vector<triangle_t> m_faces;
+  vector<cm_vertex_t> m_vertices;
+  static const int m_num_vertices = 202;
+  static const int m_num_faces = 400;
+};
+
 /**
  * Draw teddy.ply using vertex normals rather than just face normals. This
  * gives a smoother look.
  */
 void vertex_normals_teddy();
-
-void subdivision_teddy();
 
 /**
  * Reads the mesh from teddy.ply and draws it on the screen. It calculates

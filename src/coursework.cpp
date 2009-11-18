@@ -56,7 +56,8 @@ void scene()
 {
   cm0304::floor();
   cm0304::vertex_normals_teddy();
-  cm0304::subdivision_teddy();
+  cm0304::Teddy t(0);
+  t.draw();
   cm0304::parametric_surface(20);
   return;
 }

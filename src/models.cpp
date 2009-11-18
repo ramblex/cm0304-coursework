@@ -13,23 +13,8 @@ namespace cm0304
 
 using std::map;
 
-/**
- * Q2. 3D objects
- */
-void subdivision_teddy()
+void Teddy::read_mesh()
 {
-  // Material
-  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
-  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine (127.0);
-
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
   ifstream is("teddy.ply");
   string line = "";
   const int num_vertices = 202; // Number of vertices in the mesh
@@ -42,7 +27,6 @@ void subdivision_teddy()
   }
 
   // Read in the vertices
-  vector<cm_vertex_t> vertices;
   int num_vertices_read = 0;
   while (num_vertices_read < num_vertices)
   {
@@ -50,7 +34,7 @@ void subdivision_teddy()
     stringstream ss(line);
     cm_vertex_t v;
     ss >> v.position.x >> v.position.y >> v.position.z;
-    vertices.push_back(v);
+    m_vertices.push_back(v);
     ++num_vertices_read;
   }
 
@@ -69,52 +53,78 @@ void subdivision_teddy()
     stringstream ss(line);
     ss >> num >> idx1 >> idx2 >> idx3;
 
-    cm_vertex_t& v1 = vertices[idx1];
-    cm_vertex_t& v2 = vertices[idx2];
-    cm_vertex_t& v3 = vertices[idx3];
-
-    // Add indexes of adjacent vertices
-    v1.adj_verts.insert(idx2);
-    v1.adj_verts.insert(idx3);
-    v2.adj_verts.insert(idx1);
-    v2.adj_verts.insert(idx3);
-    v3.adj_verts.insert(idx1);
-    v3.adj_verts.insert(idx2);
-
-    // Triangle centroid
-    vertex_t face_point = (v1.position + v2.position + v3.position) / 3;
-    v1.centroids.push_back(face_point);
-    v2.centroids.push_back(face_point);
-    v3.centroids.push_back(face_point);
-
-    // Create edge midpoints
-    vertex_t mid1 = (v1.position + v2.position) / 2;
-    vertex_t mid2 = (v2.position + v3.position) / 2;
-    vertex_t mid3 = (v3.position + v1.position) / 2;
-
-    v1.edge_mids.insert(mid1);
-    v2.edge_mids.insert(mid1);
-    v2.edge_mids.insert(mid2);
-    v3.edge_mids.insert(mid2);
-    v3.edge_mids.insert(mid3);
-    v1.edge_mids.insert(mid1);
-
     // Store the original face
     triangle_t t;
     t.v1_idx = idx1;
     t.v2_idx = idx2;
     t.v3_idx = idx3;
-    triangles.push_back(t);
+    m_faces.push_back(t);
 
     ++num_faces_read;
   }
 
   std::cout << "Read in faces" << std::endl;
+}
 
+void Teddy::subdivide()
+{
+  // unsigned int num_faces = m_faces.size();
+  // unsigned int new_num_faces = num_faces * 4;
+  // unsigned int num_points = m_vertices.size();
+  // unsigned int new_num_points = num_points + m_edges.size() + num_faces;
+  
+  // m_vertices.resize(new_num_points);
+  // m_faces.resize(new_num_points);
+
+  // vector<triangle_t>::iterator it = m_faces.begin();
+  // for ( ; it != m_faces.end(); ++it)
+  // {
+  //   cm_vertex_t a = m_vertices[(*it).v1_idx];
+  //   cm_vertex_t b = m_vertices[(*it).v2_idx];
+  //   cm_vertex_t c = m_vertices[(*it).v3_idx];
+
+  //   // Add a face point 
+  //   // vertex_t face_point = (v1.position + v2.position + v3.position) / 3;
+
+  //   // For each edge add an edge point (a + b + f1 + f2) / 4
+
+  // }
+
+  // Move original points
+
+
+    // cm_vertex_t& v1 = m_vertices[idx1];
+    // cm_vertex_t& v2 = m_vertices[idx2];
+    // cm_vertex_t& v3 = m_vertices[idx3];
+
+    // // Add indexes of adjacent vertices
+    // v1.adj_verts.insert(idx2);
+    // v1.adj_verts.insert(idx3);
+    // v2.adj_verts.insert(idx1);
+    // v2.adj_verts.insert(idx3);
+    // v3.adj_verts.insert(idx1);
+    // v3.adj_verts.insert(idx2);
+
+    // // Triangle centroid
+    // vertex_t face_point = (v1.position + v2.position + v3.position) / 3;
+    // v1.centroids.push_back(face_point);
+    // v2.centroids.push_back(face_point);
+    // v3.centroids.push_back(face_point);
+
+    // // Create edge midpoints
+    // vertex_t mid1 = (v1.position + v2.position) / 2;
+    // vertex_t mid2 = (v2.position + v3.position) / 2;
+    // vertex_t mid3 = (v3.position + v1.position) / 2;
+
+    // v1.edge_mids.insert(mid1);
+    // v2.edge_mids.insert(mid1);
+    // v2.edge_mids.insert(mid2);
+    // v3.edge_mids.insert(mid2);
+    // v3.edge_mids.insert(mid3);
+    // v1.edge_mids.insert(mid1);
   // Move original vertices
-  vector<cm_vertex_t> new_vertices;
-  vector<cm_vertex_t>::iterator it = vertices.begin();
-  for ( ; it != vertices.end(); ++it)
+  vector<cm_vertex_t>::iterator it = m_vertices.begin();
+  for ( ; it != m_vertices.end(); ++it)
   {
     set<vertex_t>::iterator edge_it = (*it).edge_mids.begin();
     vertex_t edge_mids_sum(0, 0, 0);
@@ -129,7 +139,6 @@ void subdivision_teddy()
       centroids_sum += *face_it;
     }
 
-    cm_vertex_t new_v;
     double n = (*it).adj_verts.size();
     assert(n == (*it).centroids.size());
     vertex_t Q = centroids_sum / n;
@@ -138,43 +147,47 @@ void subdivision_teddy()
     //    std::cout << "Q = " << Q << ", R = " <<  R << std::endl;
     std::cout << "n = "  << n << std::endl;
     std::cout << "original = " << S;
-    new_v.position = (Q + R * 2 + S * (n - 3)) / n;
-    new_vertices.push_back(new_v);
-    std::cout << ", new = " << new_v.position << std::endl;
+    (*it).position = (Q + R * 2 + S * (n - 3)) / n;
+    std::cout << ", new = " << (*it).position << std::endl;
   }
+}
 
-  std::cout << "Processed vertices" << std::endl;
+void Teddy::set_material()
+{
+  // Material
+  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
+  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+}
+
+void Teddy::draw()
+{
+  set_material();
+  read_mesh();
+
+  int num_times_subdivided = 0;
+  while (num_times_subdivided < m_num_subdivides)
+    subdivide();
 
   // Draw the teddy
   glPushMatrix();
   glScalef(0.2, 0.2, 0.2);
-  glTranslated(5.0, 0.0, 2.0);
+  glTranslated(-20.0, 20.0, 2.0);
   glEnable(GL_NORMALIZE);
   glBegin(GL_TRIANGLES);
-  vector<triangle_t>::iterator tit = triangles.begin();
-  for ( ; tit != triangles.end(); ++tit)
+  vector<triangle_t>::iterator tit = m_faces.begin();
+  for ( ; tit != m_faces.end(); ++tit)
   {
-    cm_vertex_t v1 = vertices[(*tit).v1_idx];
-    cm_vertex_t v2 = vertices[(*tit).v2_idx];
-    cm_vertex_t v3 = vertices[(*tit).v3_idx];
-    vertex_t normal = find_normal(v1.position, v2.position, v3.position);
-    glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f(v1.position.x, v1.position.y, v1.position.z);
-    glVertex3f(v2.position.x, v2.position.y, v2.position.z);
-    glVertex3f(v3.position.x, v3.position.y, v3.position.z);
-  }
-  glEnd();
-  glPopMatrix();
-  glPushMatrix();
-  glScalef(0.2, 0.2, 0.2);
-  glTranslated(15.0, 0.0, 0.0);
-  glBegin(GL_TRIANGLES);
-  tit = triangles.begin();
-  for ( ; tit != triangles.end(); ++tit)
-  {
-    cm_vertex_t v1 = new_vertices[(*tit).v1_idx];
-    cm_vertex_t v2 = new_vertices[(*tit).v2_idx];
-    cm_vertex_t v3 = new_vertices[(*tit).v3_idx];
+    cm_vertex_t v1 = m_vertices[(*tit).v1_idx];
+    cm_vertex_t v2 = m_vertices[(*tit).v2_idx];
+    cm_vertex_t v3 = m_vertices[(*tit).v3_idx];
     vertex_t normal = find_normal(v1.position, v2.position, v3.position);
     glNormal3f(normal.x, normal.y, normal.z);
     glVertex3f(v1.position.x, v1.position.y, v1.position.z);
