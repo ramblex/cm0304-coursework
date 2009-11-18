@@ -8,12 +8,14 @@
 
 #include "base.hpp"
 #include <iostream>
+#include <map>
+#include <set>
 
 namespace cm0304
 {
 using std::ostream;
-
-struct halfedge_t;
+using std::map;
+using std::set;
 
 /**
  * Model a vector in a structure. This allows us to easily perform operations
@@ -24,15 +26,9 @@ struct vertex_t
   double x;
   double y;
   double z;
-};
 
-/** Vertex point for Catmull-Clark subdivision */
-struct cm_vertex_t
-{
-  int n;
-  vertex_t F; // 
-  vertex_t R;
-  vertex_t P;
+  vertex_t () : x(0), y(0), z(0) {}
+  vertex_t (double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
 };
 
 struct triangle_t
@@ -42,19 +38,13 @@ struct triangle_t
   int v3_idx;
 };
 
-struct facet_t;
-
-struct halfedge_t
+/** Vertex point for Catmull-Clark subdivision */
+struct cm_vertex_t
 {
-  vertex_t *end; // Vertex at the end of the edge
-  halfedge_t *partner;
-  facet_t *facet;
-  halfedge_t *next;
-};
-
-struct facet_t
-{
-  halfedge_t *edge;
+  set<int> adj_verts; // Adjacent vertices
+  set<vertex_t> edge_mids; // Edge midpoints
+  vector<vertex_t> centroids; // Sum of adjacent faces' centroids
+  vertex_t position; // Position of the vertex
 };
 
 /**
@@ -127,6 +117,16 @@ inline vertex_t& operator+=(vertex_t& a, const vertex_t& b)
 inline ostream& operator<<(ostream& os, const vertex_t& v)
 {
   return os << "[" << v.x << ", " << v.y << ", " << v.z << "]";
+}
+
+inline bool operator==(const vertex_t& a, const vertex_t& b)
+{
+  return ((a.x == b.x) && (a.y == b.y) && (a.z == b.z));
+}
+
+inline bool operator<(const vertex_t& a, const vertex_t& b)
+{
+  return ((a.x + a.y + a.z) < (b.x + b.y + b.z));
 }
 
 /**
