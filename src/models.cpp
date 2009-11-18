@@ -170,16 +170,20 @@ void Teddy::set_material()
 void Teddy::draw()
 {
   set_material();
-  read_mesh();
+  if (!m_read_mesh)
+  {
+    std::cout << "Reading mesh...";
+    read_mesh();
+    m_read_mesh = true;
+    std::cout << "done.\n";
+  }
 
-  int num_times_subdivided = 0;
-  while (num_times_subdivided < m_num_subdivides)
-    subdivide();
+  // int num_times_subdivided = 0;
+  // while (num_times_subdivided < m_num_subdivides)
+  //   subdivide();
 
   // Draw the teddy
   glPushMatrix();
-  glScalef(0.2, 0.2, 0.2);
-  glTranslated(-20.0, 20.0, 2.0);
   glEnable(GL_NORMALIZE);
   glBegin(GL_TRIANGLES);
   vector<triangle_t>::iterator tit = m_faces.begin();
@@ -318,7 +322,6 @@ void vertex_normals_teddy()
  */
 void parametric_surface(double res)
 {
-  std::cout << res << std::endl;
   glPushMatrix ();
 
   // Define material
@@ -336,9 +339,9 @@ void parametric_surface(double res)
   // Push current modelview matrix on a matrix stack to save current
   // transformation.
   glEnable(GL_NORMALIZE);
-  glTranslated (0.0, 3.0, 0.0);
-  glScaled(0.5, 0.5, 0.5);
-  glRotated(45.0, 0.0, 45.0, 1.0);
+  glTranslated (30.0, 0.0, 0.0);
+  //  glScaled(0.5, 0.5, 0.5);
+  //  glRotated(45.0, 0.0, 45.0, 1.0);
 
   for (double s = -180; s <= 180; s += res)
   {
@@ -392,7 +395,7 @@ void floor()
   // transformation.
   glPushMatrix ();
 
-  glTranslated (0.0, 0.0, 0.0);
+  glTranslated (0.0, -0.1, 0.0);
   glRotated (0.0, 1.0, 0.0, 0.0);
 
   glBegin(GL_QUADS);

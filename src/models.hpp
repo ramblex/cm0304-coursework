@@ -19,7 +19,7 @@ class Teddy : public Model
 {
  public:
   Teddy(int num_subdivides) 
-      : m_num_subdivides(num_subdivides)
+      : m_read_mesh(false), m_num_subdivides(num_subdivides)
   {}
 
   void draw();
@@ -28,6 +28,7 @@ class Teddy : public Model
   void set_material();
   void subdivide();
 
+  bool m_read_mesh;
   int m_num_subdivides; // Number of times to apply subdivision
   vector<triangle_t> m_faces;
   vector<cm_vertex_t> m_vertices;

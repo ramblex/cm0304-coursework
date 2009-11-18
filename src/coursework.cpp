@@ -7,200 +7,210 @@
  *
  * Copyright 2009 Alex Duller
  */
-#include "base.hpp"
+// #include "base.hpp"
 #include "models.hpp"
 
-// ID of display list containing scene description
-GLuint scene_dl(0U);
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <GLUT/glut.h>
 
-// The y rotation of the camera in degrees
-double angle = 0;
+cm0304::Teddy* t = new cm0304::Teddy(0);
 
-// If true, use subdivision for the teddy 
-bool smooth_teddy = false;
+double rx = 0.0;
+double ry = 0.0;
 
-// Camera sensitivity
-const double rotate_sensitivity = 0.4;
-const double dist_sensitivity = 0.1;
+float l[] = { 0.0,  80.0, 0.0 }; // Coordinates of the light source
+float n[] = { 0.0,  -1.0, 0.0 }; // Normal vector for the plane
+float e[] = { 0.0, -60.0, 0.0 }; // Point of the plane
 
-// The inverted position of the camera
-double position[3] = {0, -2, -30};
+void help();
 
-/** Used to keep track of keyboard keys - this is so we can use multiple keys
- * at once. */
-int g_keys[128] = {false};
-
-/** Handle special keys when they are pressed (idea from ...) */
-void special_callback(int key, int, int)
+// This function is called whenever the object needs to be drawn
+// (For the shadow and itself; for each frame twice)
+void draw()
 {
-  g_keys[key] = true;
-  return;
+  t->draw();
+
+  cm0304::parametric_surface(3);
 }
 
-// Unset the special key flag.
-void special_up_callback(int key, int, int)
+/*
+ * This is where the "magic" is done:
+ *
+ * Multiply the current ModelView-Matrix with a shadow-projetion
+ * matrix.
+ *
+ * l is the position of the light source
+ * e is a point on within the plane on which the shadow is to be
+ *   projected.
+ * n is the normal vector of the plane.
+ *
+ * Everything that is drawn after this call is "squashed" down
+ * to the plane. Hint: Gray or black color and no lighting
+ * looks good for shadows *g*
+ */
+void glShadowProjection(float * l, float * e, float * n)
 {
-  g_keys[key] = false;
-  return;
-}
+  float d, c;
+  float mat[16];
 
-void keyboard_callback(unsigned char key, int, int)
-{
+  // These are c and d (corresponding to the tutorial)
+
+  d = n[0]*l[0] + n[1]*l[1] + n[2]*l[2];
+  c = e[0]*n[0] + e[1]*n[1] + e[2]*n[2] - d;
+
+  // Create the matrix. OpenGL uses column by column
+  // ordering
+
+  mat[0]  = l[0]*n[0]+c;
+  mat[4]  = n[1]*l[0];
+  mat[8]  = n[2]*l[0];
+  mat[12] = -l[0]*c-l[0]*d;
+
+  mat[1]  = n[0]*l[1];
+  mat[5]  = l[1]*n[1]+c;
+  mat[9]  = n[2]*l[1];
+  mat[13] = -l[1]*c-l[1]*d;
+
+  mat[2]  = n[0]*l[2];
+  mat[6]  = n[1]*l[2];
+  mat[10] = l[2]*n[2]+c;
+  mat[14] = -l[2]*c-l[2]*d;
+
+  mat[3]  = n[0];
+  mat[7]  = n[1];
+  mat[11] = n[2];
+  mat[15] = -d;
+
+  // Finally multiply the matrices together *plonk*
+  glMultMatrixf(mat);
 }
 
 /**
- * Add objects to the scene. Order does not matter since we are using
- * DEPTH_TEST. They will be automatically added to the scene's display list
+ * render - gets called whenever we want to redraw the scene
  */
-void scene()
+void render()
 {
-  cm0304::floor();
-  cm0304::vertex_normals_teddy();
-  cm0304::Teddy t(0);
-  t.draw();
-  cm0304::parametric_surface(20);
-  return;
-}
+  glClearColor(0.0,0.6,0.9,0.0);
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-/**
- * Initialise the lights for the scene. Adapted from shaded.cc
- */
-void init_lights()
-{
-  // Enable lighting
+  glLightfv(GL_LIGHT0, GL_POSITION, l);
+
+  glDisable(GL_CULL_FACE);
+  glDisable(GL_LIGHTING);
+
+  glColor3f(1.0,1.0,0.0);
+  glBegin(GL_POINTS);
+  glVertex3f(l[0],l[1],l[2]);
+  glEnd();
+
+  // First, we draw the plane onto which the shadow should fall
+  // The Y-Coordinate of the plane is reduced by 0.1 so the plane is
+  // a little bit under the shadow. We reduce the risk of Z-Buffer
+  // flittering this way.
+  glColor3f(0.8,0.8,0.8);
+  glBegin(GL_QUADS);
+  glNormal3f(0.0,1.0,0.0);
+
+  glVertex3f(-1300.0,e[1]-0.1, 1300.0);
+  glVertex3f( 1300.0,e[1]-0.1, 1300.0);
+  glVertex3f( 1300.0,e[1]-0.1,-1300.0);
+  glVertex3f(-1300.0,e[1]-0.1,-1300.0);
+
+  glEnd();
+
+
+  // Draw the object that casts the shadow
+  glPushMatrix();
+  // glRotatef(ry,0,1,0);
+  // glRotatef(rx,1,0,0);
   glEnable(GL_LIGHTING);
+  glColor3f(0.0,0.0,0.8);
+  draw();
+  glPopMatrix();
 
-  // Fill in polygons
-  glPolygonMode(GL_FRONT, GL_FILL);
+  // Now we draw the shadow
+  glPushMatrix();
+  glShadowProjection(l,e,n);
+  // glRotatef(ry,0,1,0);
+  // glRotatef(rx,1,0,0);
+  glDisable(GL_LIGHTING);
+  glColor3f(0.4,0.4,0.4);
+  draw();
+  glPopMatrix();
 
-  // Treat polygon front and back side equal (no two-sided polygons)
-  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
-
-  // Enable local viewer model for specular light
-  glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-
-  // Use Gourad-shading technique
-  glShadeModel(GL_SMOOTH);
-
-  {
-    // Light source 0
-    static GLfloat ambient[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    static GLfloat diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
-    static GLfloat specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
-
-    // Enable first light 
-    glEnable (GL_LIGHT0);
-    // Set light emitted by light source 0
-    glLightfv (GL_LIGHT0, GL_AMBIENT, ambient);
-    glLightfv (GL_LIGHT0, GL_DIFFUSE, diffuse);
-    glLightfv (GL_LIGHT0, GL_SPECULAR, specular);
-  }
-  return;
-}
-
-// Set position of light sources
-void lights()
-{
-  static GLfloat light0_pos[] = {20.0, 20.0, 10.0, 1.0f};
-  glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
-  return;
-}
-
-// Render the scene
-void display_callback(void)
-{
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glLoadIdentity();
-
-  // Camera position
-  glRotatef(angle, 0, 1, 0);
-  glTranslatef(position[0], position[1], position[2]);
-
-  // Add light to the scene
-  lights();
-
-  // Render the scene
-  glCallList(scene_dl);
-
-  glFlush();
-
-  // Switch to back buffer since we are using double buffering
   glutSwapBuffers();
 }
 
-// Called when window is resized (from ...)
-void reshape_callback(int w, int h)
+void keypress(unsigned char c, int a, int b)
 {
-  if (w == 0)
-    h = 1;
+  if ( c==27 ) exit(0);
+  else if ( c=='s' ) l[1]-=5.0;
+  else if ( c=='w' ) l[1]+=5.0;
+  else if ( c=='a' ) l[0]-=5.0;
+  else if ( c=='d' ) l[0]+=5.0;
+  else if ( c=='q' ) l[2]-=5.0;
+  else if ( c=='e' ) l[2]+=5.0;
+  else if ( c=='?' ) help();
+}
 
+void help()
+{
+  printf("=======================================================\n");
+  printf("Shadow projection example by Phaetos <phaetos@gaffga.de>\n");
+  printf("-------------------------------------------------------\n");
+  printf("s/w        Move light source up / dow\n");
+  printf("a/d        Move light source left / right\n");
+  printf("q/e        Move light source forward / backward\n");
+  printf("?          This help\n");
+  printf("=======================================================\n");
+}
+
+void idle()
+{
+  rx+=0.4;
+  ry+=0.7;
+
+  render();
+}
+
+void resize(int w, int h)
+{
   glViewport(0, 0, w, h);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluPerspective(45, (float)w/h, 0.1, 100);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
 }
 
-/**
- * Handle keyboard input. Idea adapted from ()
- * Q1 (b) Navigation system
- */
-void idle_callback()
-{
-  if (g_keys[GLUT_KEY_LEFT])
-    angle -= rotate_sensitivity;
-
-  if (g_keys[GLUT_KEY_RIGHT])
-    angle += rotate_sensitivity;
-
-  if (g_keys[GLUT_KEY_UP])
-  {
-    position[0] += -sin(angle * M_PI / 180.0f) * dist_sensitivity;
-    position[2] += cos(angle * M_PI / 180.0f) * dist_sensitivity;
-  }
-
-  if (g_keys[GLUT_KEY_DOWN])
-  {
-    position[0] -= -sin(angle * M_PI / 180.0f) * dist_sensitivity;
-    position[2] -= cos(angle * M_PI / 180.0f) * dist_sensitivity;
-  }
-
-  // Q1. (a) continuously render scene
-  glutPostRedisplay();
-}
-
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-  glutInitWindowSize(800, 600);
-  glutInitWindowPosition(100, 100);
-  glutCreateWindow("Grid");
+  glutCreateWindow("shadow projection demo");
+  glutReshapeFunc(resize);
+  glutReshapeWindow(400,400);
+  glutKeyboardFunc(keypress);
+  glutDisplayFunc(render);
+  glutIdleFunc(idle);
 
-  // Enable visible surface detection via depth tests
-  glDepthFunc(GL_LEQUAL);
-  glClearDepth(1.0);
+  glEnable(GL_NORMALIZE);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_COLOR_MATERIAL);
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_TEXTURE_2D);
+  glMatrixMode(GL_PROJECTION);
 
-  // Setup callback functions
-  glutDisplayFunc(display_callback);
-  glutReshapeFunc(reshape_callback);
-  glutSpecialFunc(special_callback);
-  glutSpecialUpFunc(special_up_callback);
-  glutIdleFunc(idle_callback);
-  glutKeyboardFunc(keyboard_callback);
+  glLoadIdentity();
+  gluPerspective(60.0f, 1.0, 1.0, 400.0);
 
-  // Initialise lights so that they are ready to be added to the scene
-  init_lights();
+  // Reset the coordinate system before modifying
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(0.0, 0.0, -150.0);
 
-  // Create a display list for the scene
-  scene_dl = glGenLists(1);
-  glNewList(scene_dl, GL_COMPILE);
-  scene();
-  glEndList();
+  help();
 
   glutMainLoop();
 
   return 0;
 }
+
