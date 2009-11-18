@@ -169,7 +169,7 @@ void Teddy::set_material()
 
 void Teddy::draw()
 {
-  set_material();
+  //  set_material();
   if (!m_read_mesh)
   {
     std::cout << "Reading mesh...";
@@ -324,18 +324,6 @@ void parametric_surface(double res)
 {
   glPushMatrix ();
 
-  // Define material
-  static GLfloat ambient[] = {0.0, 0.0, 0.4, 1.0};
-  static GLfloat diffuse[] = {0.1, 0.1, 0.1, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine (3.0);
-
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
   // Push current modelview matrix on a matrix stack to save current
   // transformation.
   glEnable(GL_NORMALIZE);
@@ -378,36 +366,14 @@ void parametric_surface(double res)
 }
 
 // Draw the floor of the scene
-void floor()
+void floor(double width, double depth, double pos)
 {
-  static GLfloat diffuse[] = {0.1, 0.1, 0.0, 1.0};
-  static GLfloat ambient[] = {0.2, 0.2, 0.2, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine(3.0);
-
-  // Set material
-  glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-  glMaterialf(GL_FRONT, GL_SHININESS, shine);
-
-  // Push current modelview matrix on a matrix stack to save current
-  // transformation.
-  glPushMatrix ();
-
-  glTranslated (0.0, -0.1, 0.0);
-  glRotated (0.0, 1.0, 0.0, 0.0);
-
   glBegin(GL_QUADS);
   glNormal3f(0.0, -1.0, 0.0);
-  glVertex3f(-40.0, 0.0, 40.0);
-  glVertex3f(40.0, 0.0, 40.0);
-  glVertex3f(40.0, 0.0, -40.0);
-  glVertex3f(-40.0, 0.0, -40.0);
+  glVertex3f(-width, pos, depth);
+  glVertex3f(width, pos, depth);
+  glVertex3f(width, pos, -depth);
+  glVertex3f(-width, pos, -depth);
   glEnd();
-
-  // Get original matrix back from stack (undo above transformation
-  // for objects drawn after this one)
-  glPopMatrix ();
 }
 }  // namespace cm0304

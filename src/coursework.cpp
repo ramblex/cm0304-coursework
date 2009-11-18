@@ -7,13 +7,8 @@
  *
  * Copyright 2009 Alex Duller
  */
-// #include "base.hpp"
+#include "base.hpp"
 #include "models.hpp"
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <GLUT/glut.h>
 
 cm0304::Teddy* t = new cm0304::Teddy(0);
 
@@ -22,7 +17,7 @@ double ry = 0.0;
 
 float l[] = { 0.0,  80.0, 0.0 }; // Coordinates of the light source
 float n[] = { 0.0,  -1.0, 0.0 }; // Normal vector for the plane
-float e[] = { 0.0, -60.0, 0.0 }; // Point of the plane
+float e[] = { 0.0, -20.0, 0.0 }; // Point of the plane
 
 void help();
 
@@ -110,16 +105,7 @@ void render()
   // a little bit under the shadow. We reduce the risk of Z-Buffer
   // flittering this way.
   glColor3f(0.8,0.8,0.8);
-  glBegin(GL_QUADS);
-  glNormal3f(0.0,1.0,0.0);
-
-  glVertex3f(-1300.0,e[1]-0.1, 1300.0);
-  glVertex3f( 1300.0,e[1]-0.1, 1300.0);
-  glVertex3f( 1300.0,e[1]-0.1,-1300.0);
-  glVertex3f(-1300.0,e[1]-0.1,-1300.0);
-
-  glEnd();
-
+  cm0304::floor(1300, 1300, e[1]-0.1);
 
   // Draw the object that casts the shadow
   glPushMatrix();
@@ -127,7 +113,9 @@ void render()
   // glRotatef(rx,1,0,0);
   glEnable(GL_LIGHTING);
   glColor3f(0.0,0.0,0.8);
-  draw();
+  t->draw();
+  glColor3f(0.0,0.8,0.8);
+  cm0304::parametric_surface(3.0);
   glPopMatrix();
 
   // Now we draw the shadow
@@ -137,13 +125,14 @@ void render()
   // glRotatef(rx,1,0,0);
   glDisable(GL_LIGHTING);
   glColor3f(0.4,0.4,0.4);
-  draw();
+  t->draw();
+  cm0304::parametric_surface(3.0);
   glPopMatrix();
 
   glutSwapBuffers();
 }
 
-void keypress(unsigned char c, int a, int b)
+void keypress(unsigned char c, int, int)
 {
   if ( c==27 ) exit(0);
   else if ( c=='s' ) l[1]-=5.0;

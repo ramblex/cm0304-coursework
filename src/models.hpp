@@ -60,7 +60,7 @@ void parametric_surface(double res);
 /**
  * Draws a simple grid that looks something like a floor.
  */
-void floor();
+void floor(double width, double depth, double pos);
 }  // namespace cm0304
 
 #endif /* MODELS_H_ */
