@@ -27,8 +27,11 @@ struct vertex_t
   double y;
   double z;
 
+  vertex_t* normal;
+
   vertex_t () : x(0), y(0), z(0) {}
-  vertex_t (double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
+  vertex_t (double _x, double _y, double _z) 
+      : x(_x), y(_y), z(_z) {}
 };
 
 struct triangle_t
@@ -36,15 +39,7 @@ struct triangle_t
   int v1_idx;
   int v2_idx;
   int v3_idx;
-};
-
-/** Vertex point for Catmull-Clark subdivision */
-struct cm_vertex_t
-{
-  set<int> adj_verts; // Adjacent vertices
-  set<vertex_t> edge_mids; // Edge midpoints
-  vector<vertex_t> centroids; // Sum of adjacent faces' centroids
-  vertex_t position; // Position of the vertex
+  vertex_t normal;
 };
 
 /**
@@ -112,7 +107,6 @@ inline vertex_t& operator+=(vertex_t& a, const vertex_t& b)
   a.z += b.z;
   return a;
 }
-
 
 inline ostream& operator<<(ostream& os, const vertex_t& v)
 {

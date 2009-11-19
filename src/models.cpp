@@ -5,87 +5,117 @@
 #include "models.hpp"
 #include "util.hpp"
 #include <cassert>
-
-#include <map>
+#include <cstdio>
+#include <cstdlib>
 
 namespace cm0304
 {
-
-using std::map;
-
-vector<triangle_t> m_faces;
-vector<vertex_t> m_vertices;
-
-// Whether the teddy mesh has already been read
-bool read_teddy_mesh = false;
-bool read_cow_mesh = false;
-
-void read_mesh(const string& filename, 
-               int num_vertices, 
-               int num_faces
-               )
+struct particle_t
 {
-  ifstream is(filename.c_str());
-  std::cout << "Reading mesh from " << filename << "..."; 
-  string line = "";
-  // @todo Get these from the file
-  // Parse the header
-  while (getline(is, line))
-  {
-    if (line == "end_header")
-      break;
-  }
+  double rotation;
+  vertex_t pos;
+  double size;
+  double brightness; // Particles fade as they move upwards
+  double fade_amount; // Amount the particle should fade
+  bool is_dead; // Whether the particle can be renewed
+  double speed[3]; // Speed at which the particle moves
+};
 
-  // Read in the vertices
-  int num_vertices_read = 0;
-  while (num_vertices_read < num_vertices)
-  {
-    getline(is, line);
-    stringstream ss(line);
-    vertex_t v;
-    ss >> v.x >> v.y >> v.z;
-    m_vertices.push_back(v);
-    ++num_vertices_read;
-  }
+GLuint texture[1];
 
-  // Read in faces and create face points (centroids of the triangle)
-  int num_faces_read = 0;
-  while (num_faces_read < num_faces)
-  {
-    getline(is, line);
-    int num = 0;
-    int idx1 = -1;
-    int idx2 = -1;
-    int idx3 = -1;
-    stringstream ss(line);
-    ss >> num >> idx1 >> idx2 >> idx3;
+// Number of steam particles to generate
+const int knum_particles = 250;
 
-    // Store the original face
-    triangle_t t;
-    t.v1_idx = idx1;
-    t.v2_idx = idx2;
-    t.v3_idx = idx3;
-    m_faces.push_back(t);
+vector<particle_t> particles(knum_particles);
 
-    ++num_faces_read;
-  }
-  is.close();
-  std::cout << "done.\n";
+void init_steam_particle(particle_t& p, vertex_t& start_pos)
+{
+  p.is_dead = false;
+  p.brightness = 1.0;
+  p.fade_amount = (double(rand() % 100) / 1000) + 0.001;
+  p.size = 0.1;
+  // Start the particles at the teapot spout
+  p.pos = start_pos;
+  p.speed[0] = 0.0005-(double(rand() % 100) / 10000);
+  p.speed[1] = 0.02-(double(rand() % 100) / 10000);
+  p.speed[2] = 0.0005-(double(rand() % 100) / 10000);
+  p.rotation = double(rand() % 100) / 100;
 }
 
-void draw_cow()
+void load_particle_texture()
 {
-  // Assumes the mesh file does not change once the mesh has been read once
-  if (!read_cow_mesh)
-  {
-    read_mesh("cow.ply", 2903, 5804);
-    read_cow_mesh = true;
-  }
+  // From http://www.nullterminator.net/gltexture.html
+  // int width = 32;
+  // int height = 32;
+  // BYTE* data;
+  // FILE* fp = fopen("", "r");
 
+  // if (fp)
+  // {
+  //   glGenTextures(1, &texture[0]);
+  //   glBindTexture(GL_TEXTURE_2D, texture[0]);
+    
+  // }
+}
+
+void init_steam(float spout[3])
+{
+  vertex_t start_pos(spout[0], spout[1], spout[2]);
+
+  // Initialise the particles
+  vector<particle_t>::iterator it = particles.begin();
+  for ( ; it != particles.end(); ++it)
+  {
+    init_steam_particle(*it, start_pos);
+  }
+}
+
+void draw_steam(float spout[3])
+{
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, texture[0]);
+  vertex_t start_pos(spout[0], spout[1], spout[2]);
+  // Draw the steam
+  vector<particle_t>::iterator it = particles.begin();
+  for ( ; it != particles.end(); ++it)
+  {
+    if ((*it).is_dead)
+      init_steam_particle(*it, start_pos);
+    // Move the particle upwards, rotate it, increase its size and fade it out
+    (*it).pos.x += (*it).speed[0];
+    (*it).pos.y += (*it).speed[1];
+    (*it).pos.z += (*it).speed[2];
+    (*it).brightness -= (*it).fade_amount;
+    (*it).size += (*it).speed[1] / 10;
+    (*it).rotation += (*it).speed[0] * 100;
+    if ((*it).brightness > 0)
+    {
+      glColor4f(0.9, 0.9, 1.0, (*it).brightness);
+      glPushMatrix();
+      glTranslated((*it).pos.x - 1, (*it).pos.y - 1, (*it).pos.z - 1);
+      glRotated(2 * (*it).rotation, 0, 1, 0);
+      glBegin(GL_QUADS);
+      glVertex3f(1, 1, 1);
+      glVertex3f(1+(*it).size, 1, 1);
+      glVertex3f(1+(*it).size, 1-(*it).size, 1);
+      glVertex3f(1, 1-(*it).size, 1);
+      glEnd();
+      glPopMatrix();
+    }
+    else
+      (*it).is_dead = true;
+  }
+  glDisable(GL_BLEND);
+}
+
+void draw_teapot()
+{
   // Material
-  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
-  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat diffuse[] = {0.7, 0.7, 0.0, 1.0};
+  static GLfloat ambient[] = {0.8, 0.8, 0.8, 1.0};
+  static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
   static GLfloat shine (127.0);
 
   // Set material
@@ -94,23 +124,15 @@ void draw_cow()
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
 
-  // Draw the cow
   glPushMatrix();
-  // glTranslated(-20, 20, -20);
-  // glRotated(45, 0, 1, 0);
-  draw_mesh();
+  glTranslated(0, 5, 0);
+  glScalef(5.0, 5.0, 5.0);
+  glutSolidTeapot(1.0);
   glPopMatrix();
 }
 
-void draw_teddy()
+void draw_teddy_one(bool use_vertex_normals)
 {
-  // Assumes the mesh file does not change once the mesh has been read once
-  if (!read_teddy_mesh)
-  {
-    read_mesh("teddy.ply", 202, 400);
-    read_teddy_mesh = true;
-  }
-
   // Material
   static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
   static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
@@ -127,37 +149,15 @@ void draw_teddy()
   glPushMatrix();
   glTranslated(-20, 20, -20);
   glRotated(45, 0, 1, 0);
-  draw_mesh();
+  draw_teddy(use_vertex_normals);
   glPopMatrix();
 }
 
-void draw_mesh()
-{
-  glEnable(GL_NORMALIZE);
-  glBegin(GL_TRIANGLES);
-  vector<triangle_t>::iterator tit = m_faces.begin();
-  for ( ; tit != m_faces.end(); ++tit)
-  {
-    vertex_t v1 = m_vertices[(*tit).v1_idx];
-    vertex_t v2 = m_vertices[(*tit).v2_idx];
-    vertex_t v3 = m_vertices[(*tit).v3_idx];
-    vertex_t normal = find_normal(v1, v2, v3);
-    glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f(v1.x, v1.y, v1.z);
-    glVertex3f(v2.x, v2.y, v2.z);
-    glVertex3f(v3.x, v3.y, v3.z);
-  }
-  glEnd();
-}
-
-/**
- * Q2. 3D objects
- */
-void vertex_normals_teddy()
+void draw_teddy_two(bool use_vertex_normals)
 {
   // Material
-  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
-  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
+  static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
+  static GLfloat ambient[] = {0.0, 0.5, 0.0, 1.0};
   static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
   static GLfloat shine (127.0);
 
@@ -167,35 +167,103 @@ void vertex_normals_teddy()
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
 
-//     // Assume that the vertices of the triangle are given in an anti-clockwise
-//     // direction.
-//     vertex_t normal = find_normal(vertices[v1], vertices[v2], vertices[v3]);
+  // Draw the teddy
+  glPushMatrix();
+  glTranslated(20, 20, -20);
+  glRotated(-45, 0, 1, 0);
+  draw_teddy(use_vertex_normals);
+  glPopMatrix();
+}
 
-//     // Accumulate the normals for each vertex. 
-//     if (vector_normals.find(v1) != vector_normals.end())
-//       vector_normals[v1] = vector_normals[v1] + normal;
-//     else
-//       vector_normals[v1] = normal;
+void draw_teddy(bool use_vertex_normals)
+{
+  std::cerr << "Reading mesh..."; 
+  ifstream is("teddy.ply");
+  string line = "";
 
-//     if (vector_normals.find(v2) != vector_normals.end())
-//       vector_normals[v2] = vector_normals[v2] + normal;
-//     else
-//       vector_normals[v2] = normal;
+  const int num_vertices = 202;
+  const int num_faces = 400;
 
-//     if (vector_normals.find(v3) != vector_normals.end())
-//       vector_normals[v3] = vector_normals[v3] + normal;
-//     else
-//       vector_normals[v3] = normal;
+  vector<triangle_t> m_faces;
+  vector<vertex_t> vertices;
+  vector<vertex_t> vertex_normals;
 
-//     triangle_t t;
-//     t.v1 = vertices[v1];
-//     t.v2 = vertices[v2];
-//     t.v3 = vertices[v3];
-//     t.normal = normal;
-//     triangles.push_back(t);
+  // Parse the header
+  while (getline(is, line))
+  {
+    if (line == "end_header")
+      break;
+  }
 
-//     ++num_faces_read;
-//   }
+  // Read in the vertices
+  int num_vertices_read = 0;
+  while (num_vertices_read < num_vertices)
+  {
+    getline(is, line);
+    stringstream ss(line);
+    vertex_t v;
+    ss >> v.x >> v.y >> v.z;
+    vertices.push_back(v);
+    ++num_vertices_read;
+  }
+
+  std::cerr << "done reading vertices" << std::endl;
+
+  // Read in faces and create face points (centroids of the triangle)
+  int num_faces_read = 0;
+  while (num_faces_read < num_faces)
+  {
+    getline(is, line);
+    int num = 0;
+    stringstream ss(line);
+    triangle_t t;
+    ss >> num >> t.v1_idx >> t.v2_idx >> t.v3_idx;
+
+    vertex_t& v1 = vertices[t.v1_idx];
+    vertex_t& v2 = vertices[t.v2_idx];
+    vertex_t& v3 = vertices[t.v3_idx];
+
+    vertex_t normal = find_normal(v1, v2, v3);
+    if (use_vertex_normals)
+    {
+      // Accumulate the normals of the adjacent faces for each vertex
+      if (v1.normal == NULL)
+        v1.normal = new vertex_t(0, 0, 0);
+      if (v2.normal == NULL)
+        v2.normal = new vertex_t(0, 0, 0);
+      if (v3.normal == NULL)
+        v3.normal = new vertex_t(0, 0, 0);
+    }
+
+    t.normal = normal;
+
+    // Store the original face
+    m_faces.push_back(t);
+    ++num_faces_read;
+    std::cout << "read face" << std::endl;
+  }
+  is.close();
+  std::cout << "done.\n";
+
+  glEnable(GL_NORMALIZE);
+  glBegin(GL_TRIANGLES);
+  vector<triangle_t>::iterator tit = m_faces.begin();
+  for ( ; tit != m_faces.end(); ++tit)
+  {
+    vertex_t v1 = vertices[(*tit).v1_idx];
+    vertex_t v2 = vertices[(*tit).v2_idx];
+    vertex_t v3 = vertices[(*tit).v3_idx];
+
+    vertex_t normal = (*tit).normal;
+    // Just use the face normal if vertex normals are turned off
+    if (!use_vertex_normals)
+      glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f(v1.x, v1.y, v1.z);
+    glVertex3f(v2.x, v2.y, v2.z);
+    glVertex3f(v3.x, v3.y, v3.z);
+  }
+  glEnd();
+}
 
 //   // Draw the teddy as triangles where each vertex has its own normal
 //   glBegin(GL_TRIANGLES);
@@ -213,7 +281,6 @@ void vertex_normals_teddy()
 //   glEnd();
 
 //   glPopMatrix();
-}
 
 /**
  * Draw a trumpet shaped parametric surface. 
@@ -239,8 +306,9 @@ void parametric_surface(double res)
   // Push current modelview matrix on a matrix stack to save current
   // transformation.
   glEnable(GL_NORMALIZE);
-  glTranslated(15, 15, 5);
-  glRotated(125, 0, 1, 0);
+  glTranslated(-50, 40, 20);
+  glScalef(3.0, 3.0, 3.0);
+  glRotated(45, 0, 0, 1);
 
   for (double s = -180; s <= 180; s += res)
   {

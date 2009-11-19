@@ -3,7 +3,10 @@
 
 using namespace cm0304;
 
+bool steam_init = false;
+
 GLuint scene_dl(0U);
+GLuint scene_obj(0U);
 
 double dist_sens = 5;
 double yaw_sens = 5;
@@ -16,9 +19,12 @@ double scene_yaw = 0;
 double scene_pitch = 0;
 
 float light0_pos[] = { 0.0,  80.0, 0.0 }; // Coordinates of the light source
+
+// If true, use vertex normals for the teddy
+bool smooth_teddy = false;
+
 /*
- * This is based on work from
- * http://www.devmaster.net/articles/shadowprojection/
+ * This is copied from http://www.devmaster.net/articles/shadowprojection/
  */
 void glShadowProjection(float * l, float * e, float * n)
 {
@@ -107,6 +113,14 @@ void lights()
   glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
 }
 
+void scene_objects()
+{
+  draw_teddy_one(smooth_teddy);
+  draw_teddy_two(smooth_teddy);
+  parametric_surface(3.0);
+  draw_teapot();
+}
+
 void scene()
 {
   // Add the light as a point for debugging purposes 
@@ -118,14 +132,7 @@ void scene()
   // Add a floor
   floor(100, 100, 0);
 
-  // Add a cow
-  draw_cow();
-
-  // Add teddy
-  draw_teddy();
-
-  // Add parametric surface
-  parametric_surface(3.0);
+  glCallList(scene_obj);
 
   // Draw shadows
   float n[] = { 0.0,  -1.0, 0.0 }; // Normal vector for the plane
@@ -136,8 +143,7 @@ void scene()
   glDisable(GL_LIGHTING);
   glShadowProjection(light0_pos, e, n);
   glColor3f(0.0,0.0,0.0);
-  draw_teddy();
-  parametric_surface(3.0);
+  glCallList(scene_obj);
   glPopMatrix();
 
   glEnable(GL_LIGHTING);
@@ -155,6 +161,14 @@ void display(void)
             0.0, 1.0, 0.0);
   lights();
   glCallList(scene_dl);
+  // Draw the steam
+  float spout[3] = {7.3, 7.5, 0};
+  if (!steam_init)
+  {
+    init_steam(spout);
+    steam_init = true;
+  }
+  draw_steam(spout);
   glFlush();
   glutSwapBuffers();
 }
@@ -227,7 +241,7 @@ int main(int argc, char *argv[])
   glutInitWindowSize (600, 400);
   glutInitWindowPosition (400, 300);
   glutInitDisplayMode (GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
-  glutCreateWindow ("Corner Axes");
+  glutCreateWindow ("Tea party with weird shape");
   glutDisplayFunc (display);
   glutIdleFunc (idle);
   glutReshapeFunc (reshape);
@@ -244,6 +258,11 @@ int main(int argc, char *argv[])
   glShadeModel(GL_SMOOTH);
 
   init_lights();
+
+  scene_obj = glGenLists(1);
+  glNewList(scene_obj, GL_COMPILE);
+  scene_objects();
+  glEndList();
 
   scene_dl = glGenLists(1);
   glNewList(scene_dl, GL_COMPILE);

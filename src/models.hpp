@@ -9,8 +9,14 @@
 
 namespace cm0304
 {
-void draw_teddy();
-void draw_cow();
+void init_steam(float spout[3]);
+void draw_steam(float spout[3]);
+
+void draw_teapot();
+
+void draw_teddy_one(bool use_vertex_normals);
+void draw_teddy_two(bool use_vertex_normals);
+void draw_teddy(bool use_vertex_normals);
 
 void draw_mesh();
 
