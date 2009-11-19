@@ -1,8 +1,8 @@
 AM_CXXFLAGS = -W -Wall -Wextra -ansi $(GLUT_CFLAGS)
 
-bin_PROGRAMS = coursework
+bin_PROGRAMS = scene
 
-coursework_SOURCES = base.hpp util.hpp util.cpp models.hpp models.cpp \
-	coursework.hpp coursework.cpp
+scene_SOURCES = base.hpp util.hpp util.cpp models.hpp models.cpp \
+	lights.hpp lights.cpp app.hpp app.cpp main.cpp 
 
 LDADD = $(GLUT_LIBS)

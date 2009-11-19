@@ -9,45 +9,15 @@
 
 namespace cm0304
 {
-class Model
-{
- public:
-  virtual void draw() = 0;
-};
+void draw_teddy();
+void draw_cow();
 
-class Teddy : public Model
-{
- public:
-  Teddy(int num_subdivides) 
-      : m_read_mesh(false), m_num_subdivides(num_subdivides)
-  {}
-
-  void draw();
- private:
-  void read_mesh();
-  void set_material();
-  void subdivide();
-
-  bool m_read_mesh;
-  int m_num_subdivides; // Number of times to apply subdivision
-  vector<triangle_t> m_faces;
-  vector<cm_vertex_t> m_vertices;
-  static const int m_num_vertices = 202;
-  static const int m_num_faces = 400;
-};
+void draw_mesh();
 
 /**
- * Draw teddy.ply using vertex normals rather than just face normals. This
- * gives a smoother look.
+ * Read in a PLY mesh into m_faces and m_vertices
  */
-void vertex_normals_teddy();
-
-/**
- * Reads the mesh from teddy.ply and draws it on the screen. It calculates
- * the normals of each surface and so can be used with GL_SMOOTH.
- */
-//void teddy(bool smooth);
-
+void read_mesh(const string& filename, int vertices, int faces);
 
 /**
  * Draw a trumpet shaped parametric surface. 

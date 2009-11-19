@@ -13,12 +13,22 @@ namespace cm0304
 
 using std::map;
 
-void Teddy::read_mesh()
+vector<triangle_t> m_faces;
+vector<vertex_t> m_vertices;
+
+// Whether the teddy mesh has already been read
+bool read_teddy_mesh = false;
+bool read_cow_mesh = false;
+
+void read_mesh(const string& filename, 
+               int num_vertices, 
+               int num_faces
+               )
 {
-  ifstream is("teddy.ply");
+  ifstream is(filename.c_str());
+  std::cout << "Reading mesh from " << filename << "..."; 
   string line = "";
-  const int num_vertices = 202; // Number of vertices in the mesh
-  const int num_faces = 400; // Number of faces in the mesh
+  // @todo Get these from the file
   // Parse the header
   while (getline(is, line))
   {
@@ -32,16 +42,13 @@ void Teddy::read_mesh()
   {
     getline(is, line);
     stringstream ss(line);
-    cm_vertex_t v;
-    ss >> v.position.x >> v.position.y >> v.position.z;
+    vertex_t v;
+    ss >> v.x >> v.y >> v.z;
     m_vertices.push_back(v);
     ++num_vertices_read;
   }
 
-  std::cout << "Read in vertices" << std::endl;
-
   // Read in faces and create face points (centroids of the triangle)
-  vector<triangle_t> triangles;
   int num_faces_read = 0;
   while (num_faces_read < num_faces)
   {
@@ -62,98 +69,19 @@ void Teddy::read_mesh()
 
     ++num_faces_read;
   }
-
-  std::cout << "Read in faces" << std::endl;
+  is.close();
+  std::cout << "done.\n";
 }
 
-void Teddy::subdivide()
+void draw_cow()
 {
-  // unsigned int num_faces = m_faces.size();
-  // unsigned int new_num_faces = num_faces * 4;
-  // unsigned int num_points = m_vertices.size();
-  // unsigned int new_num_points = num_points + m_edges.size() + num_faces;
-  
-  // m_vertices.resize(new_num_points);
-  // m_faces.resize(new_num_points);
-
-  // vector<triangle_t>::iterator it = m_faces.begin();
-  // for ( ; it != m_faces.end(); ++it)
-  // {
-  //   cm_vertex_t a = m_vertices[(*it).v1_idx];
-  //   cm_vertex_t b = m_vertices[(*it).v2_idx];
-  //   cm_vertex_t c = m_vertices[(*it).v3_idx];
-
-  //   // Add a face point 
-  //   // vertex_t face_point = (v1.position + v2.position + v3.position) / 3;
-
-  //   // For each edge add an edge point (a + b + f1 + f2) / 4
-
-  // }
-
-  // Move original points
-
-
-    // cm_vertex_t& v1 = m_vertices[idx1];
-    // cm_vertex_t& v2 = m_vertices[idx2];
-    // cm_vertex_t& v3 = m_vertices[idx3];
-
-    // // Add indexes of adjacent vertices
-    // v1.adj_verts.insert(idx2);
-    // v1.adj_verts.insert(idx3);
-    // v2.adj_verts.insert(idx1);
-    // v2.adj_verts.insert(idx3);
-    // v3.adj_verts.insert(idx1);
-    // v3.adj_verts.insert(idx2);
-
-    // // Triangle centroid
-    // vertex_t face_point = (v1.position + v2.position + v3.position) / 3;
-    // v1.centroids.push_back(face_point);
-    // v2.centroids.push_back(face_point);
-    // v3.centroids.push_back(face_point);
-
-    // // Create edge midpoints
-    // vertex_t mid1 = (v1.position + v2.position) / 2;
-    // vertex_t mid2 = (v2.position + v3.position) / 2;
-    // vertex_t mid3 = (v3.position + v1.position) / 2;
-
-    // v1.edge_mids.insert(mid1);
-    // v2.edge_mids.insert(mid1);
-    // v2.edge_mids.insert(mid2);
-    // v3.edge_mids.insert(mid2);
-    // v3.edge_mids.insert(mid3);
-    // v1.edge_mids.insert(mid1);
-  // Move original vertices
-  vector<cm_vertex_t>::iterator it = m_vertices.begin();
-  for ( ; it != m_vertices.end(); ++it)
+  // Assumes the mesh file does not change once the mesh has been read once
+  if (!read_cow_mesh)
   {
-    set<vertex_t>::iterator edge_it = (*it).edge_mids.begin();
-    vertex_t edge_mids_sum(0, 0, 0);
-    for ( ; edge_it != (*it).edge_mids.end(); ++edge_it)
-    {
-      edge_mids_sum += *edge_it;
-    }
-    vector<vertex_t>::iterator face_it = (*it).centroids.begin();
-    vertex_t centroids_sum(0, 0, 0);
-    for ( ; face_it != (*it).centroids.end(); ++face_it)
-    {
-      centroids_sum += *face_it;
-    }
-
-    double n = (*it).adj_verts.size();
-    assert(n == (*it).centroids.size());
-    vertex_t Q = centroids_sum / n;
-    vertex_t R = edge_mids_sum / n;
-    vertex_t& S = (*it).position;
-    //    std::cout << "Q = " << Q << ", R = " <<  R << std::endl;
-    std::cout << "n = "  << n << std::endl;
-    std::cout << "original = " << S;
-    (*it).position = (Q + R * 2 + S * (n - 3)) / n;
-    std::cout << ", new = " << (*it).position << std::endl;
+    read_mesh("cow.ply", 2903, 5804);
+    read_cow_mesh = true;
   }
-}
 
-void Teddy::set_material()
-{
   // Material
   static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
   static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
@@ -165,41 +93,61 @@ void Teddy::set_material()
   glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
+  // Draw the cow
+  glPushMatrix();
+  // glTranslated(-20, 20, -20);
+  // glRotated(45, 0, 1, 0);
+  draw_mesh();
+  glPopMatrix();
 }
 
-void Teddy::draw()
+void draw_teddy()
 {
-  //  set_material();
-  if (!m_read_mesh)
+  // Assumes the mesh file does not change once the mesh has been read once
+  if (!read_teddy_mesh)
   {
-    std::cout << "Reading mesh...";
-    read_mesh();
-    m_read_mesh = true;
-    std::cout << "done.\n";
+    read_mesh("teddy.ply", 202, 400);
+    read_teddy_mesh = true;
   }
 
-  // int num_times_subdivided = 0;
-  // while (num_times_subdivided < m_num_subdivides)
-  //   subdivide();
+  // Material
+  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
+  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
 
   // Draw the teddy
   glPushMatrix();
+  glTranslated(-20, 20, -20);
+  glRotated(45, 0, 1, 0);
+  draw_mesh();
+  glPopMatrix();
+}
+
+void draw_mesh()
+{
   glEnable(GL_NORMALIZE);
   glBegin(GL_TRIANGLES);
   vector<triangle_t>::iterator tit = m_faces.begin();
   for ( ; tit != m_faces.end(); ++tit)
   {
-    cm_vertex_t v1 = m_vertices[(*tit).v1_idx];
-    cm_vertex_t v2 = m_vertices[(*tit).v2_idx];
-    cm_vertex_t v3 = m_vertices[(*tit).v3_idx];
-    vertex_t normal = find_normal(v1.position, v2.position, v3.position);
+    vertex_t v1 = m_vertices[(*tit).v1_idx];
+    vertex_t v2 = m_vertices[(*tit).v2_idx];
+    vertex_t v3 = m_vertices[(*tit).v3_idx];
+    vertex_t normal = find_normal(v1, v2, v3);
     glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f(v1.position.x, v1.position.y, v1.position.z);
-    glVertex3f(v2.position.x, v2.position.y, v2.position.z);
-    glVertex3f(v3.position.x, v3.position.y, v3.position.z);
+    glVertex3f(v1.x, v1.y, v1.z);
+    glVertex3f(v2.x, v2.y, v2.z);
+    glVertex3f(v3.x, v3.y, v3.z);
   }
   glEnd();
-  glPopMatrix();
 }
 
 /**
@@ -218,53 +166,6 @@ void vertex_normals_teddy()
   glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
-//   ifstream is("teddy.ply");
-//   string line = "";
-//   const int num_vertices = 202; // Number of vertices in the mesh
-//   const int num_faces = 400; // Number of faces in the mesh
-//   // Parse the header
-//   while (getline(is, line))
-//   {
-//     std::cout << "Reading line" << std::endl;
-//     if (line == "end_header")
-//       break;
-//   }
-
-//   // Read in the vertices
-//   vector<vertex_t> vertices;
-//   int num_vertices_read = 0;
-//   while (num_vertices_read < num_vertices)
-//   {
-//     getline(is, line);
-//     stringstream ss(line);
-//     vertex_t v;
-//     ss >> v.x >> v.y >> v.z;
-//     vertices.push_back(v);
-//     ++num_vertices_read;
-//   }
-
-//   glPushMatrix();
-//   glEnable(GL_NORMALIZE);
-//   glScalef(0.2, 0.2, 0.2);
-//   glTranslated(30.0, 20.0, 30.0);
-//   glTranslated(-10.0, 0.0, 0.0);
-//   // Read in the faces and compute the face normals, storing them in a vector.
-//   // This makes it easy to do work out the vector normals.
-//   int num_faces_read = 0;
-//   vector<vertex_t> face_normals;
-//   map<int, vertex_t> vector_normals;
-//   vector<triangle_t> triangles;
-//   while (num_faces_read < num_faces)
-//   {
-//     getline(is, line);
-//     stringstream ss(line);
-//     int num = 0; // Number of vertices - this is discarded
-//     int v1 = -1;
-//     int v2 = -1;
-//     int v3 = -1;
-//     // Parse the line into doubles
-//     ss >> num >> v1 >> v2 >> v3;
 
 //     // Assume that the vertices of the triangle are given in an anti-clockwise
 //     // direction.
@@ -322,14 +223,24 @@ void vertex_normals_teddy()
  */
 void parametric_surface(double res)
 {
-  glPushMatrix ();
+  // Material
+  static GLfloat diffuse[] = {0.0, 0.0, 0.7, 1.0};
+  static GLfloat ambient[] = {0.0, 0.0, 0.5, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine (127.0);
 
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
+  glPushMatrix ();
   // Push current modelview matrix on a matrix stack to save current
   // transformation.
   glEnable(GL_NORMALIZE);
-  glTranslated (30.0, 0.0, 0.0);
-  //  glScaled(0.5, 0.5, 0.5);
-  //  glRotated(45.0, 0.0, 45.0, 1.0);
+  glTranslated(15, 15, 5);
+  glRotated(125, 0, 1, 0);
 
   for (double s = -180; s <= 180; s += res)
   {
@@ -368,6 +279,18 @@ void parametric_surface(double res)
 // Draw the floor of the scene
 void floor(double width, double depth, double pos)
 {
+  // Material
+  static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
+  static GLfloat ambient[] = {0.8, 0.8, 0.8, 1.0};
+  static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
   glBegin(GL_QUADS);
   glNormal3f(0.0, -1.0, 0.0);
   glVertex3f(-width, pos, depth);
