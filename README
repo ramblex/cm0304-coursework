@@ -1,15 +1,23 @@
 CM0304 coursework
 =================
 
-To install and run use the following commands:
+To run use the following commands:
 
 ./configure
 make
 
-If there are no errors, you can run the program using 
+If there are no errors, you can run the program using:
 
-src/coursework
+cd src 
+./scene
 
-alternatively, install the program using
+N.B. The program MUST be run from the src directory since it uses relative paths
 
-sudo make install
+Advanced feature: draw steam coming from a teapot
+
+File where each question is addressed:
+1. (a) main.cpp
+   (b) main.cpp (keyboard())
+2. (a) models.cpp
+   (b) models.cpp
+3. (c) models.cpp 

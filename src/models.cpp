@@ -10,57 +10,69 @@
 
 namespace cm0304
 {
+/**
+ * Data structure for a steam particle. Used in draw_steam()
+ */
 struct particle_t
 {
-  double rotation;
-  vertex_t pos;
-  double size;
+  double rotation; // Rotation coefficient of the particle
+  vertex_t pos; // Position of the bottom of the particle
+  double size; // Size of the particle
   double brightness; // Particles fade as they move upwards
   double fade_amount; // Amount the particle should fade
   bool is_dead; // Whether the particle can be renewed
   double speed[3]; // Speed at which the particle moves
 };
 
+// Texture for the steam particles
 GLuint texture[1];
 
-// Number of steam particles to generate
-const int knum_particles = 250;
-
+// Number of steam particles to generate. In general, more particles means
+// more steam. It seems to work quite well with a fairly small number of 
+// particles.
+const int knum_particles = 20;
 vector<particle_t> particles(knum_particles);
 
 void init_steam_particle(particle_t& p, vertex_t& start_pos)
 {
   p.is_dead = false;
   p.brightness = 1.0;
-  p.fade_amount = (double(rand() % 100) / 1000) + 0.001;
-  p.size = 0.1;
+  p.fade_amount = (double(rand() % 100) / 1000) + 0.0009;
+  p.size = 1;
   // Start the particles at the teapot spout
   p.pos = start_pos;
-  p.speed[0] = 0.0005-(double(rand() % 100) / 10000);
+  p.speed[0] = 0.0002-(double(rand() % 100) / 10000);
   p.speed[1] = 0.02-(double(rand() % 100) / 10000);
-  p.speed[2] = 0.0005-(double(rand() % 100) / 10000);
+  p.speed[2] = 0.0002-(double(rand() % 100) / 10000);
   p.rotation = double(rand() % 100) / 100;
 }
 
 void load_particle_texture()
 {
-  // From http://www.nullterminator.net/gltexture.html
-  // int width = 32;
-  // int height = 32;
-  // BYTE* data;
-  // FILE* fp = fopen("", "r");
-
-  // if (fp)
-  // {
-  //   glGenTextures(1, &texture[0]);
-  //   glBindTexture(GL_TEXTURE_2D, texture[0]);
-    
-  // }
+  // http://www.gamedev.net/community/forums/topic.asp?topic_id=445226
+  int w = 32;
+  int h = 32;
+  int s=w*h*3;
+  GLubyte bits[s];
+  FILE *file;
+  file=fopen("textures/raw_particle.raw","rb");
+  assert(file != NULL);
+  fread(&bits,s,1,file);
+  fclose(file);
+  glGenTextures(1,&texture[0]);
+  glBindTexture(GL_TEXTURE_2D, texture[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D ,0 , 3, w, h,0,GL_RGB,GL_UNSIGNED_BYTE,bits);
 }
 
 void init_steam(float spout[3])
 {
-  vertex_t start_pos(spout[0], spout[1], spout[2]);
+  load_particle_texture();
+  // Offset the start height to prevent too much overlap particles
+  vertex_t start_pos(spout[0], 
+                     spout[1] + (double(rand() % 100)), 
+                     spout[2]);
 
   // Initialise the particles
   vector<particle_t>::iterator it = particles.begin();
@@ -70,17 +82,30 @@ void init_steam(float spout[3])
   }
 }
 
+/**
+ * Advanced feature. Implement a particle effect such as steam from a teapot.
+ * @param spout Location of the spout
+ */
+// Ideas from http://www.gamedev.net/community/forums/topic.asp?topic_id=392601&whichpage=1&#2601399
+// Some very basic help from http://nehe.gamedev.net/data/lessons/lesson.asp?lesson=19 (e.g. turning on blend)
 void draw_steam(float spout[3])
 {
+  glShadeModel(GL_SMOOTH);
+  glDisable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, texture[0]);
-  vertex_t start_pos(spout[0], spout[1], spout[2]);
+  // Offset the start height to prevent too much overlap particles
+  vertex_t start_pos(spout[0], 
+                     spout[1] + (double(rand() % 100) / 50), 
+                     spout[2]);
   // Draw the steam
   vector<particle_t>::iterator it = particles.begin();
   for ( ; it != particles.end(); ++it)
   {
+    // Reinitialise any dead particles
     if ((*it).is_dead)
       init_steam_particle(*it, start_pos);
     // Move the particle upwards, rotate it, increase its size and fade it out
@@ -88,18 +113,23 @@ void draw_steam(float spout[3])
     (*it).pos.y += (*it).speed[1];
     (*it).pos.z += (*it).speed[2];
     (*it).brightness -= (*it).fade_amount;
-    (*it).size += (*it).speed[1] / 10;
-    (*it).rotation += (*it).speed[0] * 100;
+    (*it).size += (*it).speed[1];
+    (*it).rotation += (*it).speed[0] * 10;
+    // Draw the particle
     if ((*it).brightness > 0)
     {
-      glColor4f(0.9, 0.9, 1.0, (*it).brightness);
       glPushMatrix();
       glTranslated((*it).pos.x - 1, (*it).pos.y - 1, (*it).pos.z - 1);
       glRotated(2 * (*it).rotation, 0, 1, 0);
+      glColor4f(0.7, 0.0, 0.0, (*it).brightness);
       glBegin(GL_QUADS);
+      glTexCoord2d(0, 0);
       glVertex3f(1, 1, 1);
+      glTexCoord2d(1, 0);
       glVertex3f(1+(*it).size, 1, 1);
+      glTexCoord2d(1, 1);
       glVertex3f(1+(*it).size, 1-(*it).size, 1);
+      glTexCoord2d(0, 1);
       glVertex3f(1, 1-(*it).size, 1);
       glEnd();
       glPopMatrix();
@@ -108,6 +138,8 @@ void draw_steam(float spout[3])
       (*it).is_dead = true;
   }
   glDisable(GL_BLEND);
+  glEnable(GL_DEPTH_TEST);
+  glDisable(GL_TEXTURE_2D);
 }
 
 void draw_teapot()

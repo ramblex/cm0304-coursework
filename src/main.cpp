@@ -162,7 +162,7 @@ void display(void)
   lights();
   glCallList(scene_dl);
   // Draw the steam
-  float spout[3] = {7.3, 7.5, 0};
+  float spout[3] = {7.3, 8.1, 0};
   if (!steam_init)
   {
     init_steam(spout);
@@ -202,13 +202,13 @@ void keyboard(unsigned char key, int, int)
     camera_pos[0] -= dist_sens * sin(camera_yaw * deg_to_rad);
     camera_pos[2] += dist_sens * cos(camera_yaw * deg_to_rad);
   }
-  else if (key == 'q')
+  else if (key == 'z')
   {
     // Strafe left
     camera_pos[0] += dist_sens * sin((camera_yaw - 90) * deg_to_rad);
     camera_pos[2] -= dist_sens * cos((camera_yaw - 90) * deg_to_rad);
   }
-  else if (key == 'e')
+  else if (key == 'c')
   {
     // Strafe right
     camera_pos[0] += dist_sens * sin((camera_yaw + 90) * deg_to_rad);
@@ -224,11 +224,11 @@ void keyboard(unsigned char key, int, int)
     // Rotate right
     camera_yaw += yaw_sens;
   }
-  else if (key == 'r')
+  else if (key == 'e')
   {
     camera_pos[1] += dist_sens;
   }
-  else if (key == 'f')
+  else if (key == 'q')
   {
     camera_pos[1] -= dist_sens;
   }
