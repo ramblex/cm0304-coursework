@@ -1,4 +1,4 @@
 .deps/
-coursework
+scene
 *.o
 *.ply
