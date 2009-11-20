@@ -1,6 +1,8 @@
 CM0304 coursework
 =================
 
+teddy.ply is expected to be in the src directory
+
 To run use the following commands:
 
 ./configure
