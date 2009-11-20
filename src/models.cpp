@@ -1,6 +1,6 @@
 /**
  * @file models.cpp Implementation of model objects which can be added to the
- * scene.
+ * scene. Function comments are in the header
  */
 #include "models.hpp"
 #include "util.hpp"
@@ -10,28 +10,224 @@
 
 namespace cm0304
 {
-/**
- * Data structure for a steam particle. Used in draw_steam()
- */
-struct particle_t
-{
-  double rotation; // Rotation coefficient of the particle
-  vertex_t pos; // Position of the bottom of the particle
-  double size; // Size of the particle
-  double brightness; // Particles fade as they move upwards
-  double fade_amount; // Amount the particle should fade
-  bool is_dead; // Whether the particle can be renewed
-  double speed[3]; // Speed at which the particle moves
-};
-
 // Texture for the steam particles
 GLuint texture[1];
 
-// Number of steam particles to generate. In general, more particles means
-// more steam. It seems to work quite well with a fairly small number of 
-// particles.
-const int knum_particles = 20;
 vector<particle_t> particles(knum_particles);
+
+// Draw the floor of the scene
+void floor(double width, double depth, double pos)
+{
+  // Material
+  static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
+  static GLfloat ambient[] = {0.8, 0.8, 0.8, 1.0};
+  static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
+  glBegin(GL_QUADS);
+  glNormal3f(0.0, -1.0, 0.0);
+  glVertex3f(-width, pos, depth);
+  glVertex3f(width, pos, depth);
+  glVertex3f(width, pos, -depth);
+  glVertex3f(-width, pos, -depth);
+  glEnd();
+}
+
+void parametric_surface(double res)
+{
+  // Material
+  static GLfloat diffuse[] = {0.0, 0.0, 0.7, 1.0};
+  static GLfloat ambient[] = {0.0, 0.0, 0.5, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
+  glPushMatrix ();
+  // Push current modelview matrix on a matrix stack to save current
+  // transformation.
+  glEnable(GL_NORMALIZE);
+  glTranslated(-50, 40, 20);
+  glScalef(3.0, 3.0, 3.0);
+  glRotated(45, 0, 0, 1);
+
+  for (double s = -180; s <= 180; s += res)
+  {
+    glBegin(GL_QUAD_STRIP);
+    for (double t = 0; t < 17; ++t)
+    {
+      vertex_t v0;
+      v0.x = t;
+      v0.y = 6/pow(t + 1, 0.7) * cos(s * deg_to_rad);
+      v0.z = 6/pow(t + 1, 0.7) * sin(s * deg_to_rad);
+
+      vertex_t v1;
+      v1.x = t;
+      v1.y = 6/pow(t + 1, 0.7) * cos((s + res) * deg_to_rad);
+      v1.z = 6/pow(t + 1, 0.7) * sin((s + res) * deg_to_rad);
+
+      // Use a third point to get two edges on the face
+      vertex_t v2;
+      v2.x = t+1;
+      v2.y = 6/pow(t + 2, 0.7) * cos((s + res) * deg_to_rad);
+      v2.z = 6/pow(t + 2, 0.7) * sin((s + res) * deg_to_rad);
+
+      vertex_t normal = find_normal(v0, v1, v2);
+      glNormal3d(normal.x, normal.y, normal.z);
+      glVertex3d(v0.x, v0.y, v0.z);
+      glVertex3d(v1.x, v1.y, v1.z);
+    }
+    glEnd();
+  }
+
+  // Get original matrix back from stack (undo above transformation
+  // for objects drawn after this one)
+  glPopMatrix ();
+}
+
+void draw_teddy(bool use_vertex_normals)
+{
+  std::cerr << "Reading mesh..."; 
+  ifstream is("teddy.ply");
+  string line = "";
+
+  const int num_vertices = 202;
+  const int num_faces = 400;
+
+  vector<triangle_t> m_faces;
+  vector<vertex_t> vertices;
+  vector<vertex_t> vertex_normals;
+
+  // Parse the header
+  while (getline(is, line))
+  {
+    if (line == "end_header")
+      break;
+  }
+
+  // Read in the vertices
+  int num_vertices_read = 0;
+  while (num_vertices_read < num_vertices)
+  {
+    getline(is, line);
+    stringstream ss(line);
+    vertex_t v;
+    ss >> v.x >> v.y >> v.z;
+    vertices.push_back(v);
+    ++num_vertices_read;
+  }
+
+  std::cerr << "done reading vertices" << std::endl;
+
+  // Read in faces and create face points (centroids of the triangle)
+  int num_faces_read = 0;
+  while (num_faces_read < num_faces)
+  {
+    getline(is, line);
+    int num = 0;
+    stringstream ss(line);
+    triangle_t t;
+    ss >> num >> t.v1_idx >> t.v2_idx >> t.v3_idx;
+
+    vertex_t& v1 = vertices[t.v1_idx];
+    vertex_t& v2 = vertices[t.v2_idx];
+    vertex_t& v3 = vertices[t.v3_idx];
+
+    vertex_t normal = find_normal(v1, v2, v3);
+    if (use_vertex_normals)
+    {
+      // Accumulate the normals of the adjacent faces for each vertex
+      if (v1.normal == NULL)
+        v1.normal = new vertex_t(0, 0, 0);
+      if (v2.normal == NULL)
+        v2.normal = new vertex_t(0, 0, 0);
+      if (v3.normal == NULL)
+        v3.normal = new vertex_t(0, 0, 0);
+    }
+
+    t.normal = normal;
+
+    // Store the original face
+    m_faces.push_back(t);
+    ++num_faces_read;
+    std::cout << "read face" << std::endl;
+  }
+  is.close();
+  std::cout << "done.\n";
+
+  glEnable(GL_NORMALIZE);
+  glBegin(GL_TRIANGLES);
+  vector<triangle_t>::iterator tit = m_faces.begin();
+  for ( ; tit != m_faces.end(); ++tit)
+  {
+    vertex_t v1 = vertices[(*tit).v1_idx];
+    vertex_t v2 = vertices[(*tit).v2_idx];
+    vertex_t v3 = vertices[(*tit).v3_idx];
+
+    vertex_t normal = (*tit).normal;
+    // Just use the face normal if vertex normals are turned off
+    if (!use_vertex_normals)
+      glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f(v1.x, v1.y, v1.z);
+    glVertex3f(v2.x, v2.y, v2.z);
+    glVertex3f(v3.x, v3.y, v3.z);
+  }
+  glEnd();
+}
+
+void draw_teddy_one(bool use_vertex_normals)
+{
+  // Material
+  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
+  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
+  // Draw the teddy
+  glPushMatrix();
+  glTranslated(-20, 20, -20);
+  glRotated(45, 0, 1, 0);
+  draw_teddy(use_vertex_normals);
+  glPopMatrix();
+}
+
+void draw_teddy_two(bool use_vertex_normals)
+{
+  // Material
+  static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
+  static GLfloat ambient[] = {0.0, 0.5, 0.0, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
+  // Draw the teddy
+  glPushMatrix();
+  glTranslated(20, 20, -20);
+  glRotated(-45, 0, 1, 0);
+  draw_teddy(use_vertex_normals);
+  glPopMatrix();
+}
 
 void init_steam_particle(particle_t& p, vertex_t& start_pos)
 {
@@ -161,242 +357,5 @@ void draw_teapot()
   glScalef(5.0, 5.0, 5.0);
   glutSolidTeapot(1.0);
   glPopMatrix();
-}
-
-void draw_teddy_one(bool use_vertex_normals)
-{
-  // Material
-  static GLfloat diffuse[] = {0.7, 0.0, 0.0, 1.0};
-  static GLfloat ambient[] = {0.5, 0.0, 0.0, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine (127.0);
-
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
-  // Draw the teddy
-  glPushMatrix();
-  glTranslated(-20, 20, -20);
-  glRotated(45, 0, 1, 0);
-  draw_teddy(use_vertex_normals);
-  glPopMatrix();
-}
-
-void draw_teddy_two(bool use_vertex_normals)
-{
-  // Material
-  static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
-  static GLfloat ambient[] = {0.0, 0.5, 0.0, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine (127.0);
-
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
-  // Draw the teddy
-  glPushMatrix();
-  glTranslated(20, 20, -20);
-  glRotated(-45, 0, 1, 0);
-  draw_teddy(use_vertex_normals);
-  glPopMatrix();
-}
-
-void draw_teddy(bool use_vertex_normals)
-{
-  std::cerr << "Reading mesh..."; 
-  ifstream is("teddy.ply");
-  string line = "";
-
-  const int num_vertices = 202;
-  const int num_faces = 400;
-
-  vector<triangle_t> m_faces;
-  vector<vertex_t> vertices;
-  vector<vertex_t> vertex_normals;
-
-  // Parse the header
-  while (getline(is, line))
-  {
-    if (line == "end_header")
-      break;
-  }
-
-  // Read in the vertices
-  int num_vertices_read = 0;
-  while (num_vertices_read < num_vertices)
-  {
-    getline(is, line);
-    stringstream ss(line);
-    vertex_t v;
-    ss >> v.x >> v.y >> v.z;
-    vertices.push_back(v);
-    ++num_vertices_read;
-  }
-
-  std::cerr << "done reading vertices" << std::endl;
-
-  // Read in faces and create face points (centroids of the triangle)
-  int num_faces_read = 0;
-  while (num_faces_read < num_faces)
-  {
-    getline(is, line);
-    int num = 0;
-    stringstream ss(line);
-    triangle_t t;
-    ss >> num >> t.v1_idx >> t.v2_idx >> t.v3_idx;
-
-    vertex_t& v1 = vertices[t.v1_idx];
-    vertex_t& v2 = vertices[t.v2_idx];
-    vertex_t& v3 = vertices[t.v3_idx];
-
-    vertex_t normal = find_normal(v1, v2, v3);
-    if (use_vertex_normals)
-    {
-      // Accumulate the normals of the adjacent faces for each vertex
-      if (v1.normal == NULL)
-        v1.normal = new vertex_t(0, 0, 0);
-      if (v2.normal == NULL)
-        v2.normal = new vertex_t(0, 0, 0);
-      if (v3.normal == NULL)
-        v3.normal = new vertex_t(0, 0, 0);
-    }
-
-    t.normal = normal;
-
-    // Store the original face
-    m_faces.push_back(t);
-    ++num_faces_read;
-    std::cout << "read face" << std::endl;
-  }
-  is.close();
-  std::cout << "done.\n";
-
-  glEnable(GL_NORMALIZE);
-  glBegin(GL_TRIANGLES);
-  vector<triangle_t>::iterator tit = m_faces.begin();
-  for ( ; tit != m_faces.end(); ++tit)
-  {
-    vertex_t v1 = vertices[(*tit).v1_idx];
-    vertex_t v2 = vertices[(*tit).v2_idx];
-    vertex_t v3 = vertices[(*tit).v3_idx];
-
-    vertex_t normal = (*tit).normal;
-    // Just use the face normal if vertex normals are turned off
-    if (!use_vertex_normals)
-      glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f(v1.x, v1.y, v1.z);
-    glVertex3f(v2.x, v2.y, v2.z);
-    glVertex3f(v3.x, v3.y, v3.z);
-  }
-  glEnd();
-}
-
-//   // Draw the teddy as triangles where each vertex has its own normal
-//   glBegin(GL_TRIANGLES);
-//   vector<triangle_t>::iterator it = triangles.begin();
-//   for ( ; it != triangles.end(); ++it)
-//   {
-//     triangle_t t = (*it);
-//     glNormal3f(t.v1.normal.x, t.v1.normal.y, t.v1.normal.z);
-//     glVertex3f(t.v1.x, t.v1.y, t.v1.z);
-//     glNormal3f(t.v2.normal.x, t.v2.normal.y, t.v2.normal.z);
-//     glVertex3f(t.v2.x, t.v2.y, t.v2.z);
-//     glNormal3f(t.v3.normal.x, t.v3.normal.y, t.v3.normal.z);
-//     glVertex3f(t.v3.x, t.v3.y, t.v3.z);
-//   }
-//   glEnd();
-
-//   glPopMatrix();
-
-/**
- * Draw a trumpet shaped parametric surface. 
- * Equations are from http://www.math.uri.edu/~bkaskosz/flashmo/tools/parsur/
- * @param res The accuracy with which to draw the parametric surface;
- * the lower, the more accurate.
- */
-void parametric_surface(double res)
-{
-  // Material
-  static GLfloat diffuse[] = {0.0, 0.0, 0.7, 1.0};
-  static GLfloat ambient[] = {0.0, 0.0, 0.5, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-  static GLfloat shine (127.0);
-
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
-  glPushMatrix ();
-  // Push current modelview matrix on a matrix stack to save current
-  // transformation.
-  glEnable(GL_NORMALIZE);
-  glTranslated(-50, 40, 20);
-  glScalef(3.0, 3.0, 3.0);
-  glRotated(45, 0, 0, 1);
-
-  for (double s = -180; s <= 180; s += res)
-  {
-    glBegin(GL_QUAD_STRIP);
-    for (double t = 0; t < 17; ++t)
-    {
-      vertex_t v0;
-      v0.x = t;
-      v0.y = 6/pow(t + 1, 0.7) * cos(s * deg_to_rad);
-      v0.z = 6/pow(t + 1, 0.7) * sin(s * deg_to_rad);
-
-      vertex_t v1;
-      v1.x = t;
-      v1.y = 6/pow(t + 1, 0.7) * cos((s + res) * deg_to_rad);
-      v1.z = 6/pow(t + 1, 0.7) * sin((s + res) * deg_to_rad);
-
-      // Use a third point to get two edges on the face
-      vertex_t v2;
-      v2.x = t+1;
-      v2.y = 6/pow(t + 2, 0.7) * cos((s + res) * deg_to_rad);
-      v2.z = 6/pow(t + 2, 0.7) * sin((s + res) * deg_to_rad);
-
-      vertex_t normal = find_normal(v0, v1, v2);
-      glNormal3d(normal.x, normal.y, normal.z);
-      glVertex3d(v0.x, v0.y, v0.z);
-      glVertex3d(v1.x, v1.y, v1.z);
-    }
-    glEnd();
-  }
-
-  // Get original matrix back from stack (undo above transformation
-  // for objects drawn after this one)
-  glPopMatrix ();
-}
-
-// Draw the floor of the scene
-void floor(double width, double depth, double pos)
-{
-  // Material
-  static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
-  static GLfloat ambient[] = {0.8, 0.8, 0.8, 1.0};
-  static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
-  static GLfloat shine (127.0);
-
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
-  glBegin(GL_QUADS);
-  glNormal3f(0.0, -1.0, 0.0);
-  glVertex3f(-width, pos, depth);
-  glVertex3f(width, pos, depth);
-  glVertex3f(width, pos, -depth);
-  glVertex3f(-width, pos, -depth);
-  glEnd();
 }
 }  // namespace cm0304

@@ -7,16 +7,9 @@
 #define UTIL_H_
 
 #include "base.hpp"
-#include <iostream>
-#include <map>
-#include <set>
 
 namespace cm0304
 {
-using std::ostream;
-using std::map;
-using std::set;
-
 /**
  * Model a vector in a structure. This allows us to easily perform operations
  * on vectors without having to do lots of mangling of arrays.
@@ -34,12 +27,16 @@ struct vertex_t
       : x(_x), y(_y), z(_z) {}
 };
 
+/**
+ * Model a triangle face. The vertices are expected to be stored within a 
+ * vector.
+ */
 struct triangle_t
 {
-  int v1_idx;
-  int v2_idx;
-  int v3_idx;
-  vertex_t normal;
+  int v1_idx; // Index of first vertex
+  int v2_idx; // Index of second vertex
+  int v3_idx; // Index of third vertex
+  vertex_t normal; // The face normal
 };
 
 /**
@@ -48,7 +45,6 @@ struct triangle_t
  * @return The secant of the angle, x
  */
 double sec(double x);
-
 
 /**
  * Substract two vertices and return the resulting vertex
@@ -108,7 +104,7 @@ inline vertex_t& operator+=(vertex_t& a, const vertex_t& b)
   return a;
 }
 
-inline ostream& operator<<(ostream& os, const vertex_t& v)
+inline std::ostream& operator<<(std::ostream& os, const vertex_t& v)
 {
   return os << "[" << v.x << ", " << v.y << ", " << v.z << "]";
 }

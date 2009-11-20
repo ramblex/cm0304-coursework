@@ -1,8 +1,8 @@
 CM0304 coursework
 =================
 
-teddy.ply is expected to be in the src directory
-
+Basic usage
+-----------
 To run use the following commands:
 
 ./configure
@@ -15,11 +15,27 @@ cd src
 
 N.B. The program MUST be run from the src directory since it uses relative paths
 
-Advanced feature: draw steam coming from a teapot
+teddy.ply is expected to be in the src/ directory
 
-File where each question is addressed:
-1. (a) main.cpp
-   (b) main.cpp (keyboard())
-2. (a) models.cpp
-   (b) models.cpp
-3. (c) models.cpp 
+Code structure
+--------------
+The code is structured in the following way:
+- main.cpp 
+  Initialises the OpenGL pipeline, renders the scene, etc.
+
+- models.hpp/models.cpp
+  Implementation of the models: teddy, parametric surface, floor and teapot  
+
+- util.hpp/util.cpp
+  Implementation of useful functions used throughout the application
+
+- base.hpp
+  Includes the required files
+
+File where each question is addressed
+-------------------------------------
+
+
+Advanced feature
+----------------
+Draw steam coming from a teapot

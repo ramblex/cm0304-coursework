@@ -1,6 +1,6 @@
 /**
- * This file contains all the necessary header files for creating the program
- * Copyright 2009 Alex Duller
+ * @file base.hpp Contains all the necessary header files for creating the
+ * program
  */
 #ifndef BASE_H_
 #define BASE_H_
