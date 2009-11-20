@@ -3,16 +3,13 @@
  * scene. Function comments are in the header
  */
 #include "models.hpp"
-#include "util.hpp"
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
 
 namespace cm0304
 {
 // Texture for the steam particles
 GLuint texture[1];
 
+// Particles used for the steam
 vector<particle_t> particles(knum_particles);
 
 // Draw the floor of the scene
@@ -237,9 +234,9 @@ void init_steam_particle(particle_t& p, vertex_t& start_pos)
   p.size = 1;
   // Start the particles at the teapot spout
   p.pos = start_pos;
-  p.speed[0] = 0.0002-(double(rand() % 100) / 10000);
+  p.speed[0] = 0.0003-(double(rand() % 100) / 10000);
   p.speed[1] = 0.02-(double(rand() % 100) / 10000);
-  p.speed[2] = 0.0002-(double(rand() % 100) / 10000);
+  p.speed[2] = 0.0003-(double(rand() % 100) / 10000);
   p.rotation = double(rand() % 100) / 100;
 }
 
@@ -286,6 +283,17 @@ void init_steam(float spout[3])
 // Some very basic help from http://nehe.gamedev.net/data/lessons/lesson.asp?lesson=19 (e.g. turning on blend)
 void draw_steam(float spout[3])
 {
+  static GLfloat diffuse[] = {0.1, 0.1, 0.1, 1.0};
+  static GLfloat ambient[] = {0.2, 0.2, 0.2, 1.0};
+  static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
+  static GLfloat shine (127.0);
+
+  // Set material
+  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
   glShadeModel(GL_SMOOTH);
   glDisable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
@@ -342,7 +350,7 @@ void draw_teapot()
 {
   // Material
   static GLfloat diffuse[] = {0.7, 0.7, 0.0, 1.0};
-  static GLfloat ambient[] = {0.8, 0.8, 0.8, 1.0};
+  static GLfloat ambient[] = {0.7, 0.7, 0.0, 1.0};
   static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
   static GLfloat shine (127.0);
 

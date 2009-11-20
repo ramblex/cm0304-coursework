@@ -1,7 +1,7 @@
 /**
  * @file util.hpp This file contains all the utility functions which are useful
- * when drawing objects in OpenGL. The data structures in this file are adapted
- * from exercise G-II solutions.
+ * when drawing objects in OpenGL. Some of the data structures in this file are
+ * adapted from exercise G-II solutions.
  */
 #ifndef UTIL_H_
 #define UTIL_H_
@@ -37,6 +37,20 @@ struct triangle_t
   int v2_idx; // Index of second vertex
   int v3_idx; // Index of third vertex
   vertex_t normal; // The face normal
+};
+
+/**
+ * Data structure for a particle of steam
+ */
+struct particle_t
+{
+  double rotation; // Rotation coefficient of the particle
+  vertex_t pos; // Position of the bottom of the particle
+  double size; // Size of the particle
+  double brightness; // Particles fade as they move upwards
+  double fade_amount; // Amount the particle should fade
+  bool is_dead; // Whether the particle can be renewed
+  double speed[3]; // Speed at which the particle moves
 };
 
 /**

@@ -5,6 +5,9 @@
 #ifndef BASE_H_
 #define BASE_H_
 
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <math.h>
 #include <fstream>

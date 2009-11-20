@@ -4,7 +4,6 @@
 #ifndef MODELS_H_
 #define MODELS_H_
 
-#include "base.hpp"
 #include "util.hpp"
 
 namespace cm0304
@@ -50,20 +49,6 @@ void draw_teddy_two(bool use_vertex_normals);
  * particles ~ 10 - 20
  */
 static const int knum_particles = 20;
-
-/**
- * Data structure for a particle of steam
- */
-struct particle_t
-{
-  double rotation; // Rotation coefficient of the particle
-  vertex_t pos; // Position of the bottom of the particle
-  double size; // Size of the particle
-  double brightness; // Particles fade as they move upwards
-  double fade_amount; // Amount the particle should fade
-  bool is_dead; // Whether the particle can be renewed
-  double speed[3]; // Speed at which the particle moves
-};
 
 void init_steam(float spout[3]);
 void draw_steam(float spout[3]);
