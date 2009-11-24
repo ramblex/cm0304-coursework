@@ -5,6 +5,6 @@ bin_PROGRAMS = scene
 scene_SOURCES = base.hpp util.hpp util.cpp models.hpp models.cpp \
 	 main.cpp 
 
-EXTRA_DIST = textures/
+EXTRA_DIST = textures/raw_particle.raw
 
 LDADD = $(GLUT_LIBS)
