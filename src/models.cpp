@@ -124,8 +124,6 @@ void draw_teddy(bool use_vertex_normals)
     ++num_vertices_read;
   }
 
-  std::cerr << "done reading vertices" << std::endl;
-
   // Read in faces and create face points (centroids of the triangle)
   int num_faces_read = 0;
   while (num_faces_read < num_faces)
@@ -151,7 +149,6 @@ void draw_teddy(bool use_vertex_normals)
     // Store the original face
     m_faces.push_back(t);
     ++num_faces_read;
-    std::cout << "read face" << std::endl;
   }
   is.close();
   std::cout << "done.\n";
