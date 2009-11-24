@@ -10,12 +10,12 @@ using namespace cm0304;
 bool smooth_teddy(false); // If true, use vertex normals for the teddy
 bool steam_init(false); // Whether the steam particles have been initialised
 GLuint scene_dl(0U); // Display list for the scene
-double dist_sens(0.5); // Distance sensitivity - higher means more sensitive
-double yaw_sens(0.6); // Rotation sensitivity - higher means more sensitive
-double camera_pos[] = {0, 20, 120}; // Camera position {x, y, z}
+double dist_sens(0.2); // Distance sensitivity - higher means more sensitive
+double yaw_sens(0.4); // Rotation sensitivity - higher means more sensitive
+double camera_pos[] = {0.0, 20.0, 120.0}; // Camera position {x, y, z}
 double camera_yaw(0.0); // Camera turn
 float light0_pos[] = { 20.0,  50.0, 50.0 }; // Coordinates of the light source
-float spout[3] = {7.3, 8.1, 0}; // Position of the teapot spout
+float spout[3] = {7.3, 7.0, 0.0}; // Position of the teapot spout
 // Idea based on `Glut game keyboard example' from 
 // http://nccastaff.bournemouth.ac.uk/jmacey/RobTheBloke/www/
 bool keys[512] = {false}; // Store state of each key
@@ -173,12 +173,14 @@ void keyboard_move()
 // Idea from http://nccastaff.bournemouth.ac.uk/jmacey/RobTheBloke/www/
 void keyboard(unsigned char key, int, int)
 {
-  keys[key] = true;
+  int key_num = static_cast<int>(key);
+  keys[key_num] = true;
 }
 
 void keyboard_up(unsigned char key, int, int)
 {
-  keys[key] = false;
+  int key_num = static_cast<int>(key);
+  keys[key_num] = false;
 }
 
 // Q.1 (a) Continuously render the scene
