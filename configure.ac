@@ -6,7 +6,7 @@ AC_INIT([CM0304 Coursework], [0.1], [alexduller@gmail.com])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_AUX_DIR([scripts])
 
-AM_INIT_AUTOMAKE([coursework], [0.1])
+AM_INIT_AUTOMAKE([alexduller], [0.1])
 
 # Checks for programs.
 AC_PROG_CXX
