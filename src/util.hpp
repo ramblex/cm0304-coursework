@@ -20,8 +20,6 @@ struct vertex_t
   double y;
   double z;
 
-  vertex_t* normal;
-
   vertex_t () : x(0), y(0), z(0) {}
   vertex_t (double _x, double _y, double _z) 
       : x(_x), y(_y), z(_z) {}

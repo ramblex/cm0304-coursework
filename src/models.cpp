@@ -144,12 +144,6 @@ void draw_teddy(bool use_vertex_normals)
     if (use_vertex_normals)
     {
       // Accumulate the normals of the adjacent faces for each vertex
-      if (v1.normal == NULL)
-        v1.normal = new vertex_t(0, 0, 0);
-      if (v2.normal == NULL)
-        v2.normal = new vertex_t(0, 0, 0);
-      if (v3.normal == NULL)
-        v3.normal = new vertex_t(0, 0, 0);
     }
 
     t.normal = normal;
@@ -283,20 +277,9 @@ void init_steam(float spout[3])
 // Some very basic help from http://nehe.gamedev.net/data/lessons/lesson.asp?lesson=19 (e.g. turning on blend)
 void draw_steam(float spout[3])
 {
-  static GLfloat diffuse[] = {0.1, 0.1, 0.1, 1.0};
-  static GLfloat ambient[] = {0.2, 0.2, 0.2, 1.0};
-  static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
-  static GLfloat shine (127.0);
-
-  // Set material
-  glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
-  glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
-  glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
-  glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
   glShadeModel(GL_SMOOTH);
-  glDisable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
+  glDepthMask(GL_FALSE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glEnable(GL_TEXTURE_2D);
@@ -319,13 +302,24 @@ void draw_steam(float spout[3])
     (*it).brightness -= (*it).fade_amount;
     (*it).size += (*it).speed[1];
     (*it).rotation += (*it).speed[0] * 10;
+
+    static GLfloat diffuse[] = {0.1, 0.1, 0.1, (*it).brightness};
+    static GLfloat ambient[] = {0.3, 0.3, 0.3, (*it).brightness};
+    static GLfloat specular[] = {0.0, 0.0, 0.0, (*it).brightness};
+    static GLfloat shine (127.0);
+
+    // Set material
+    glMaterialfv (GL_FRONT, GL_AMBIENT, ambient);
+    glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
+    glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
+    glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
+
     // Draw the particle
     if ((*it).brightness > 0)
     {
       glPushMatrix();
       glTranslated((*it).pos.x - 1, (*it).pos.y - 1, (*it).pos.z - 1);
       glRotated(2 * (*it).rotation, 0, 1, 0);
-      glColor4f(0.7, 0.0, 0.0, (*it).brightness);
       glBegin(GL_QUADS);
       glTexCoord2d(0, 0);
       glVertex3f(1, 1, 1);
@@ -341,8 +335,8 @@ void draw_steam(float spout[3])
     else
       (*it).is_dead = true;
   }
+  glDepthMask(GL_TRUE);
   glDisable(GL_BLEND);
-  glEnable(GL_DEPTH_TEST);
   glDisable(GL_TEXTURE_2D);
 }
 
@@ -351,7 +345,7 @@ void draw_teapot()
   // Material
   static GLfloat diffuse[] = {0.7, 0.7, 0.0, 1.0};
   static GLfloat ambient[] = {0.7, 0.7, 0.0, 1.0};
-  static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
+  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
   static GLfloat shine (127.0);
 
   // Set material
@@ -361,7 +355,7 @@ void draw_teapot()
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
 
   glPushMatrix();
-  glTranslated(0, 5, 0);
+  glTranslated(0, 3.5, 0);
   glScalef(5.0, 5.0, 5.0);
   glutSolidTeapot(1.0);
   glPopMatrix();

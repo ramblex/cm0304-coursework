@@ -10,12 +10,15 @@ using namespace cm0304;
 bool smooth_teddy(false); // If true, use vertex normals for the teddy
 bool steam_init(false); // Whether the steam particles have been initialised
 GLuint scene_dl(0U); // Display list for the scene
-double dist_sens(5); // Distance sensitivity - higher means more sensitive
-double yaw_sens(5); // Rotation sensitivity - higher means more sensitive
+double dist_sens(0.5); // Distance sensitivity - higher means more sensitive
+double yaw_sens(0.6); // Rotation sensitivity - higher means more sensitive
 double camera_pos[] = {0, 20, 120}; // Camera position {x, y, z}
 double camera_yaw(0.0); // Camera turn
-float light0_pos[] = { 0.0,  80.0, 0.0 }; // Coordinates of the light source
+float light0_pos[] = { 20.0,  50.0, 50.0 }; // Coordinates of the light source
 float spout[3] = {7.3, 8.1, 0}; // Position of the teapot spout
+// Idea based on `Glut game keyboard example' from 
+// http://nccastaff.bournemouth.ac.uk/jmacey/RobTheBloke/www/
+bool keys[512] = {false}; // Store state of each key
 
 // From shaded.cc
 // Initialise the light source
@@ -51,6 +54,15 @@ void lights()
 // Any objects should be added here
 void scene()
 {
+  glEnable(GL_SMOOTH);
+  glBegin(GL_POINTS);
+  glPointSize(2.0);
+  glVertex3fv(light0_pos);
+  glEnd();
+
+  // Draw the teapot and its steam
+  draw_teapot();
+
   // Add a floor
   floor(100, 100, 0);
 
@@ -62,9 +74,6 @@ void scene()
 
   // Draw the parametric surface
   parametric_surface(3.0);
-
-  // Draw the teapot and its steam
-  draw_teapot();
 }
 
 // Display callback function - render the scene display list and update the
@@ -102,12 +111,6 @@ void reshape(int w, int h)
   glMatrixMode(GL_MODELVIEW);
 }
 
-// Q.1 (a) Continuously render the scene
-void idle()
-{
-  glutPostRedisplay();
-}
-
 // Handle any keyboard input and update the camera appropriately
 // Q.1 (b) A navigation system which allows the user to display the scene
 // from an arbitrary position.
@@ -119,50 +122,69 @@ void idle()
 // q: down
 // z: strafe left
 // c: strafe right
-void keyboard(unsigned char key, int, int)
+void keyboard_move()
 {
-  if (key == 'w') 
+  if (keys['w']) 
   {
     // Forwards
     camera_pos[0] += dist_sens * sin(camera_yaw * deg_to_rad);
     camera_pos[2] -= dist_sens * cos(camera_yaw * deg_to_rad);
   }
-  else if (key == 's')
+  if (keys['s'])
   {
     // Backwards
     camera_pos[0] -= dist_sens * sin(camera_yaw * deg_to_rad);
     camera_pos[2] += dist_sens * cos(camera_yaw * deg_to_rad);
   }
-  else if (key == 'z')
+  if (keys['z'])
   {
     // Strafe left
     camera_pos[0] += dist_sens * sin((camera_yaw - 90) * deg_to_rad);
     camera_pos[2] -= dist_sens * cos((camera_yaw - 90) * deg_to_rad);
   }
-  else if (key == 'c')
+  if (keys['c'])
   {
     // Strafe right
     camera_pos[0] += dist_sens * sin((camera_yaw + 90) * deg_to_rad);
     camera_pos[2] -= dist_sens * cos((camera_yaw + 90) * deg_to_rad);
   }
-  else if (key == 'a') 
+  if (keys['a']) 
   {
     // Rotate left
     camera_yaw -= yaw_sens;
   }
-  else if (key == 'd') 
+  if (keys['d']) 
   {
     // Rotate right
     camera_yaw += yaw_sens;
   }
-  else if (key == 'e')
+  if (keys['e'])
   {
     camera_pos[1] += dist_sens;
   }
-  else if (key == 'q')
+  if (keys['q'])
   {
-    camera_pos[1] -= dist_sens;
+    // Don't let the camera go below floor level
+    if (camera_pos[1] > dist_sens)
+      camera_pos[1] -= dist_sens;
   }
+}
+
+// Idea from http://nccastaff.bournemouth.ac.uk/jmacey/RobTheBloke/www/
+void keyboard(unsigned char key, int, int)
+{
+  keys[key] = true;
+}
+
+void keyboard_up(unsigned char key, int, int)
+{
+  keys[key] = false;
+}
+
+// Q.1 (a) Continuously render the scene
+void idle()
+{
+  keyboard_move();
   glutPostRedisplay();
 }
 
@@ -179,9 +201,10 @@ int main(int argc, char *argv[])
   glutIdleFunc(idle);
   glutReshapeFunc(reshape);
   glutKeyboardFunc(keyboard);
+  glutKeyboardUpFunc(keyboard_up);
 
   // Background colour is black
-  glClearColor(0.0, 0.0, 0.0, 1.0);
+  glClearColor(0.2, 0.2, 0.2, 1.0);
   // Enable visible surface detection via depth tests
   glDepthFunc(GL_LEQUAL);
   glClearDepth(1.0);
