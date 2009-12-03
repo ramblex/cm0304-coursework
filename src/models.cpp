@@ -17,7 +17,7 @@ void floor(double width, double depth, double pos)
 {
   // Material
   static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
-  static GLfloat ambient[] = {0.8, 0.8, 0.8, 1.0};
+  static GLfloat ambient[] = {0.0, 0.5, 0.0, 1.0};
   static GLfloat specular[] = {0.0, 0.0, 0.0, 1.0};
   static GLfloat shine (127.0);
 
@@ -39,9 +39,9 @@ void floor(double width, double depth, double pos)
 void parametric_surface(double res)
 {
   // Material
-  static GLfloat diffuse[] = {0.0, 0.0, 0.7, 1.0};
-  static GLfloat ambient[] = {0.0, 0.0, 0.5, 1.0};
-  static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+  static GLfloat diffuse[] = {0.3, 0.1, 0.0, 1.0};
+  static GLfloat ambient[] = {0.8, 0.4, 0.0, 1.0};
+  static GLfloat specular[] = {0.7, 0.7, 0.7, 1.0};
   static GLfloat shine (127.0);
 
   // Set material
@@ -49,14 +49,6 @@ void parametric_surface(double res)
   glMaterialfv (GL_FRONT, GL_DIFFUSE, diffuse);
   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
   glMaterialfv (GL_FRONT, GL_SHININESS, &shine);
-
-  glPushMatrix ();
-  // Push current modelview matrix on a matrix stack to save current
-  // transformation.
-  glEnable(GL_NORMALIZE);
-  glTranslated(-50, 40, 20);
-  glScalef(3.0, 3.0, 3.0);
-  glRotated(45, 0, 0, 1);
 
   for (double s = -180; s <= 180; s += res)
   {
@@ -86,14 +78,36 @@ void parametric_surface(double res)
     }
     glEnd();
   }
+}
 
-  // Get original matrix back from stack (undo above transformation
-  // for objects drawn after this one)
-  glPopMatrix ();
+void trees()
+{
+  glPushMatrix ();
+  glTranslated(-50, 60, 0);
+  glScalef(4.0, 4.0, 4.0);
+  glRotated(-90, 0, 0, 1);
+  parametric_surface(3.0);
+  glPopMatrix();
+
+  glPushMatrix ();
+  glTranslated(50, 60, 0);
+  glScalef(4.0, 4.0, 4.0);
+  glRotated(-90, 0, 0, 1);
+  parametric_surface(10.0);
+  glPopMatrix();
+
+  glPushMatrix ();
+  glTranslated(-30, 60, -60);
+  glScalef(4.0, 4.0, 4.0);
+  glRotated(-90, 0, 0, 1);
+  parametric_surface(20.0);
+  glPopMatrix();
 }
 
 void draw_teddy(bool use_vertex_normals)
 {
+  // This could be refactored but the difference in performance would be 
+  // negligible.
   std::cerr << "Reading mesh..."; 
   ifstream is("teddy.ply");
   string line = "";
@@ -103,7 +117,7 @@ void draw_teddy(bool use_vertex_normals)
 
   vector<triangle_t> m_faces;
   vector<vertex_t> vertices;
-  vector<vertex_t> vertex_normals;
+  vector<vertex_t> vertex_normals(num_vertices);
 
   // Parse the header
   while (getline(is, line))
@@ -142,6 +156,9 @@ void draw_teddy(bool use_vertex_normals)
     if (use_vertex_normals)
     {
       // Accumulate the normals of the adjacent faces for each vertex
+      vertex_normals[t.v1_idx] += normal;
+      vertex_normals[t.v2_idx] += normal;
+      vertex_normals[t.v3_idx] += normal;
     }
 
     t.normal = normal;
@@ -163,11 +180,33 @@ void draw_teddy(bool use_vertex_normals)
     vertex_t v3 = vertices[(*tit).v3_idx];
 
     vertex_t normal = (*tit).normal;
-    // Just use the face normal if vertex normals are turned off
-    if (!use_vertex_normals)
+    if (use_vertex_normals)
+    {
+      glNormal3f(vertex_normals[(*tit).v1_idx].x,
+                 vertex_normals[(*tit).v1_idx].y,
+                 vertex_normals[(*tit).v1_idx].z);
+    }
+    else
+    {
+      // Just use a face normal if not using vertex normals
       glNormal3f(normal.x, normal.y, normal.z);
+    }
     glVertex3f(v1.x, v1.y, v1.z);
+
+    if (use_vertex_normals)
+    {
+      glNormal3f(vertex_normals[(*tit).v2_idx].x,
+                 vertex_normals[(*tit).v2_idx].y,
+                 vertex_normals[(*tit).v2_idx].z);
+    }
     glVertex3f(v2.x, v2.y, v2.z);
+
+    if (use_vertex_normals)
+    {
+      glNormal3f(vertex_normals[(*tit).v3_idx].x,
+                 vertex_normals[(*tit).v3_idx].y,
+                 vertex_normals[(*tit).v3_idx].z);
+    }
     glVertex3f(v3.x, v3.y, v3.z);
   }
   glEnd();
@@ -198,8 +237,8 @@ void draw_teddy_one(bool use_vertex_normals)
 void draw_teddy_two(bool use_vertex_normals)
 {
   // Material
-  static GLfloat diffuse[] = {0.0, 0.7, 0.0, 1.0};
-  static GLfloat ambient[] = {0.0, 0.5, 0.0, 1.0};
+  static GLfloat diffuse[] = {0.0, 0.2, 0.5, 1.0};
+  static GLfloat ambient[] = {0.0, 0.3, 0.5, 1.0};
   static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
   static GLfloat shine (127.0);
 

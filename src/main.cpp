@@ -7,11 +7,14 @@
 
 using namespace cm0304;
 
-bool smooth_teddy(false); // If true, use vertex normals for the teddy
+// Variables that may be altered to taste
+const bool smooth_teddy(false); // If true, use vertex normals for the teddy
+const double dist_sens(0.2); //Distance sensitivity - higher means more sensitive
+const double yaw_sens(0.4); // Rotation sensitivity - higher means more sensitive
+
+// Do not change these
 bool steam_init(false); // Whether the steam particles have been initialised
 GLuint scene_dl(0U); // Display list for the scene
-double dist_sens(0.2); // Distance sensitivity - higher means more sensitive
-double yaw_sens(0.4); // Rotation sensitivity - higher means more sensitive
 double camera_pos[] = {0.0, 20.0, 120.0}; // Camera position {x, y, z}
 double camera_yaw(0.0); // Camera turn
 float light0_pos[] = { 20.0,  50.0, 50.0 }; // Coordinates of the light source
@@ -72,8 +75,8 @@ void scene()
   // Draw the green teddy
   draw_teddy_two(smooth_teddy);
 
-  // Draw the parametric surface
-  parametric_surface(3.0);
+  // Draw parametric surfaces to look roughly like trees
+  trees();
 }
 
 // Display callback function - render the scene display list and update the
@@ -165,7 +168,7 @@ void keyboard_move()
   if (keys['q'])
   {
     // Don't let the camera go below floor level
-    if (camera_pos[1] > dist_sens)
+    if (camera_pos[1] > 2*dist_sens)
       camera_pos[1] -= dist_sens;
   }
 }
@@ -196,7 +199,7 @@ int main(int argc, char *argv[])
   glutInitWindowSize(600, 400);
   glutInitWindowPosition(100, 100);
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
-  glutCreateWindow("Tea party with weird shape");
+  glutCreateWindow("Tea party in the forest");
 
   // Set callback functions
   glutDisplayFunc(display);
@@ -205,8 +208,8 @@ int main(int argc, char *argv[])
   glutKeyboardFunc(keyboard);
   glutKeyboardUpFunc(keyboard_up);
 
-  // Background colour is black
-  glClearColor(0.2, 0.2, 0.2, 1.0);
+  // Background colour
+  glClearColor(0.0, 0.4, 0.5, 1.0);
   // Enable visible surface detection via depth tests
   glDepthFunc(GL_LEQUAL);
   glClearDepth(1.0);

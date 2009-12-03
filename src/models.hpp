@@ -26,6 +26,13 @@ void floor(double width, double depth, double pos);
 void parametric_surface(double res);
 
 /**
+ * Draws several parametric surfaces rotated upwards so that they look somewhat
+ * like trees. This also demonstrates what happens when the input parameter is
+ * changed for the parametric surface.
+ */
+void trees();
+
+/**
  * Q.2 (b)
  * Draw a teddy. A call to this function should be made within a glPushMatrix()
  * @param use_vertex_normals If true, each vertex is given a normal. If false,
